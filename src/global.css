@@ -2,3 +2,34 @@
 @tailwind components;
 @tailwind screens;
 @tailwind utilities;
+
+@layer base {
+	@font-face {
+		font-family: "Louis George Cafe";
+		font-weight: normal;
+		src: url("/font/Louis-George-Cafe.ttf") format("truetype");
+	}
+	@font-face {
+		font-family: "Louis George Cafe";
+		font-weight: 100;
+		src: url("/font/Louis-George-Cafe-Light.ttf") format("truetype");
+	}
+	@font-face {
+		font-family: "Louis George Cafe";
+		font-weight: bold;
+		src: url("/font/Louis-George-Cafe-Bold.ttf") format("truetype");
+	}
+
+	#svelte {
+		font-family: "Louis George Cafe", sans-serif;
+		background: radial-gradient(theme("colors.indigo.500"), theme("colors.indigo.900"));
+		@apply h-screen text-white grid overflow-hidden;
+	}
+
+	main {
+		grid-column: 1 / 2;
+		grid-row: 1 / 2;
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+}
