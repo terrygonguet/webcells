@@ -11,10 +11,16 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 	setup(ctx, level)
 
 	let old = performance.now()
-	requestAnimationFrame(function raf(time) {
+	let rafID = requestAnimationFrame(function raf(time) {
 		const delta = (time - old) / 1000
 		old = time
 		render(delta, ctx, level)
-		requestAnimationFrame(raf)
+		rafID = requestAnimationFrame(raf)
 	})
+
+	return {
+		destroy() {
+			cancelAnimationFrame(rafID)
+		},
+	}
 }
