@@ -18,11 +18,11 @@ export function Right<T>(item: T): Result<T> {
 	return { type: "right", item }
 }
 
-export function isLeft<T>(result: Result<T>) {
+export function isLeft<T>(result: Result<T>): result is Left {
 	return result.type == "left"
 }
 
-export function isRight<T>(result: Result<T>) {
+export function isRight<T>(result: Result<T>): result is Right<T> {
 	return result.type == "right"
 }
 
