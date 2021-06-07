@@ -1,4 +1,5 @@
-import { clamp, randInt } from "$lib/utils"
+import { clamp } from "$lib/utils"
+import { cubicOut } from "svelte/easing"
 
 export type Level = {
 	title: string
@@ -6,28 +7,31 @@ export type Level = {
 	flavor?: string
 	width: number
 	height: number
-	cells: Cell[][]
+	hexes: (Hex | null)[][]
 }
 
-export type Cell = null | EmptyCell | FullCell | ColumnHintCell
+export type Hex = EmptyHex | FullHex | ColumnHint
 
-type EmptyCell = {
-	type: CellType.Empty
+type EmptyHex = {
+	type: HexType.Empty
 	hidden: boolean
 	precision: Precision
+	scale: number
 }
 
-type FullCell = {
-	type: CellType.Full
+type FullHex = {
+	type: HexType.Full
 	hidden: boolean
 	precision: Precision.None | Precision.Number
+	scale: number
 }
 
-type ColumnHintCell = {
-	type: CellType.ColumnHint
+type ColumnHint = {
+	type: HexType.ColumnHint
 	precision: Precision.Number | Precision.Precise
 	// number of 60° increments to rotate counter-clockwise
 	angle: 0 | 1 | 2 | 3 | 4 | 5
+	scale: number
 }
 
 export enum Precision {
@@ -36,7 +40,7 @@ export enum Precision {
 	Precise,
 }
 
-export enum CellType {
+export enum HexType {
 	Empty = "empty",
 	Full = "full",
 	ColumnHint = "hint",
@@ -58,9 +62,9 @@ export type State = {
 }
 
 type RenderCache = {
-	cellRadius: number
-	cellGapV: number
-	cellGapH: number
+	hexRadius: number
+	rowGap: number
+	colGap: number
 }
 
 export function parse(text: string): Level {
@@ -71,41 +75,41 @@ export function parse(text: string): Level {
 			flavor: "This is a test\nover two lines",
 			width: 5,
 			height: 5,
-			cells: [
+			hexes: [
 				[
-					{ type: CellType.ColumnHint, precision: Precision.Number, angle: 0 },
-					{ type: CellType.Empty, hidden: false, precision: Precision.None },
-					{ type: CellType.Empty, hidden: true, precision: Precision.Number },
-					{ type: CellType.Empty, hidden: true, precision: Precision.Precise },
-					{ type: CellType.ColumnHint, precision: Precision.Number, angle: 1 },
+					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 0, scale: 0 },
+					{ type: HexType.Empty, hidden: false, precision: Precision.None, scale: 0 },
+					{ type: HexType.Empty, hidden: true, precision: Precision.Number, scale: 0 },
+					{ type: HexType.Empty, hidden: true, precision: Precision.Precise, scale: 0 },
+					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 1, scale: 0 },
 				],
 				[
-					{ type: CellType.Full, hidden: true, precision: Precision.None },
-					{ type: CellType.Empty, hidden: false, precision: Precision.None },
-					{ type: CellType.Empty, hidden: false, precision: Precision.Number },
-					{ type: CellType.Empty, hidden: false, precision: Precision.Precise },
+					{ type: HexType.Full, hidden: true, precision: Precision.None, scale: 0 },
+					{ type: HexType.Empty, hidden: false, precision: Precision.None, scale: 0 },
+					{ type: HexType.Empty, hidden: false, precision: Precision.Number, scale: 0 },
+					{ type: HexType.Empty, hidden: false, precision: Precision.Precise, scale: 0 },
 					null,
 				],
 				[
-					{ type: CellType.ColumnHint, precision: Precision.Number, angle: 2 },
-					{ type: CellType.Full, hidden: true, precision: Precision.Number },
-					{ type: CellType.Full, hidden: false, precision: Precision.None },
-					{ type: CellType.Full, hidden: false, precision: Precision.Number },
-					{ type: CellType.ColumnHint, precision: Precision.Number, angle: 3 },
+					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 2, scale: 0 },
+					{ type: HexType.Full, hidden: true, precision: Precision.Number, scale: 0 },
+					{ type: HexType.Full, hidden: false, precision: Precision.None, scale: 0 },
+					{ type: HexType.Full, hidden: false, precision: Precision.Number, scale: 0 },
+					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 3, scale: 0 },
 				],
 				[
-					{ type: CellType.Full, hidden: false, precision: Precision.None },
-					{ type: CellType.Empty, hidden: true, precision: Precision.None },
-					{ type: CellType.Empty, hidden: true, precision: Precision.Number },
-					{ type: CellType.Empty, hidden: false, precision: Precision.Precise },
+					{ type: HexType.Full, hidden: false, precision: Precision.None, scale: 0 },
+					{ type: HexType.Empty, hidden: true, precision: Precision.None, scale: 0 },
+					{ type: HexType.Empty, hidden: true, precision: Precision.Number, scale: 0 },
+					{ type: HexType.Empty, hidden: false, precision: Precision.Precise, scale: 0 },
 					null,
 				],
 				[
-					{ type: CellType.ColumnHint, precision: Precision.Number, angle: 4 },
-					{ type: CellType.Empty, hidden: true, precision: Precision.None },
-					{ type: CellType.Empty, hidden: false, precision: Precision.Number },
-					{ type: CellType.Empty, hidden: true, precision: Precision.Precise },
-					{ type: CellType.ColumnHint, precision: Precision.Number, angle: 5 },
+					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 4, scale: 0 },
+					{ type: HexType.Empty, hidden: true, precision: Precision.None, scale: 0 },
+					{ type: HexType.Empty, hidden: false, precision: Precision.Number, scale: 0 },
+					{ type: HexType.Empty, hidden: true, precision: Precision.Precise, scale: 0 },
+					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 5, scale: 0 },
 				],
 			],
 		}
@@ -134,48 +138,50 @@ export function setup(canvas: HTMLCanvasElement, level: Level): State {
 const TAU = 2 * Math.PI,
 	h = Math.sqrt(3) / 2, // https://www.editions-petiteelisabeth.fr/images/calculs/1_hauteur_triangle_equilateral.png?1472908488
 	cache: RenderCache = {
-		cellRadius: 0,
-		cellGapV: 0,
-		cellGapH: 0,
+		hexRadius: 0,
+		rowGap: 0,
+		colGap: 0,
 	}
 export function render(delta: number, state: State) {
-	const { width, height, ctx, gradients, level, sizeChanged, cursor } = state
+	const { width, height, ctx, gradients, level, sizeChanged, cursor, canvas } = state
 
 	// recompute constants if size changes
 	if (sizeChanged) {
-		cache.cellRadius = Math.min(
+		cache.hexRadius = Math.min(
 			clamp((0.8 * height) / (2 * level.height), 20, 70),
 			clamp((0.8 * width) / (2 * level.width), 20, 70),
 		)
 		const gap = 1.06
-		cache.cellGapV = cache.cellRadius * h * 2 * gap
-		cache.cellGapH = cache.cellRadius * 1.5 * gap
+		cache.rowGap = cache.hexRadius * h * 2 * gap
+		cache.colGap = cache.hexRadius * 1.5 * gap
 
-		gradients.yellow = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.cellRadius)
+		gradients.yellow = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
 		gradients.yellow.addColorStop(0, "#e7dd7e")
 		gradients.yellow.addColorStop(1, "#ead61f")
-		gradients.red = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.cellRadius)
+		gradients.red = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
 		gradients.red.addColorStop(0, "#e36868")
 		gradients.red.addColorStop(1, "#c32222")
-		gradients.gray = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.cellRadius)
+		gradients.gray = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
 		gradients.gray.addColorStop(0, "darkgray")
 		gradients.gray.addColorStop(1, "gray")
 
 		state.sizeChanged = false
 	}
-	const { cellGapH, cellGapV, cellRadius } = cache,
-		drawCell = makeDrawCell(state, cache),
-		boardOffsetX = (-level.width / 2 + 0.5) * cellGapH,
-		boardOffsetY = (-level.height / 2 + 0.2) * cellGapV,
-		boardCursor = [cursor[0] - width / 2 - boardOffsetX, cursor[1] - height / 2 - boardOffsetY] as [
-			number,
-			number,
-		],
-		[hasFocusedHex, [fx, fy]] = getFocusedHex(boardCursor, cache, level)
+
+	const { colGap, rowGap } = cache,
+		drawHex = makeDrawHex(state, cache),
+		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
+		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
+		boardCursor = [
+			cursor[0] - width / 2 - boardOffsetX,
+			cursor[1] - height / 2 - boardOffsetY,
+		] as Position,
+		focusedHex = getFocusedHex(boardCursor, cache, level),
+		scaleSpeed = delta * (1000 / 300) // 300ms animation
 
 	ctx.clearRect(0, 0, width, height)
 	ctx.save()
-	ctx.font = cellGapH + "px 'Louis George Cafe'"
+	ctx.font = colGap + "px 'Louis George Cafe'"
 	ctx.textAlign = "center"
 	ctx.textBaseline = "middle"
 	ctx.translate(width / 2, height / 2)
@@ -183,43 +189,40 @@ export function render(delta: number, state: State) {
 	ctx.save()
 	ctx.translate(boardOffsetX, boardOffsetY)
 
-	ctx.save()
+	const hexes: [number, number, Hex][] = []
 	for (let i = 0; i < level.width; i++) {
-		const col = level.cells[i]
 		for (let j = 0; j < level.height; j++) {
-			const cell = col[j]
-			if (!hasFocusedHex || i != fx || j != fy) drawCell(cell)
-			ctx.translate(0, cellGapV)
+			const hex = level.hexes[i][j]
+			if (!hex) continue
+			hexes.push([i, j, hex])
+			if (focusedHex != hex) hex.scale = clamp(hex.scale - scaleSpeed, 0, 1)
 		}
-		ctx.translate(cellGapH, (i % 2 ? -0.5 : 0.5) * cellGapV - level.height * cellGapV)
 	}
-	ctx.restore()
-
-	if (hasFocusedHex) {
-		ctx.save()
-		ctx.translate(fx * cellGapH, (fy + (fx % 2) * 0.5) * cellGapV)
-		ctx.scale(1.2, 1.2)
-		drawCell(level.cells[fx][fy])
-		ctx.restore()
+	if (focusedHex) {
+		focusedHex.scale = clamp(focusedHex.scale + scaleSpeed, 0, 1)
+		canvas.style.cursor = focusedHex.type != HexType.ColumnHint ? "pointer" : "initial"
+	} else canvas.style.cursor = "initial"
+	hexes.sort((a, b) => {
+		if (a[2].type == HexType.ColumnHint) return 1
+		else {
+			if (b[2].type == HexType.ColumnHint) return -1
+			else return a[2].scale - b[2].scale
+		}
+	})
+	for (const [x, y, hex] of hexes) {
+		drawHex(x, y, hex)
 	}
-
-	// ctx.beginPath()
-	// ctx.moveTo(-width, boardCursor[1])
-	// ctx.lineTo(width, boardCursor[1])
-	// ctx.moveTo(boardCursor[0], -height)
-	// ctx.lineTo(boardCursor[0], height)
-	// ctx.stroke()
 
 	ctx.restore()
 
 	ctx.restore()
 }
 
-function makeDrawCell(state: State, cache: RenderCache) {
+function makeDrawHex(state: State, cache: RenderCache) {
 	const { ctx, gradients, level } = state,
-		{ cellRadius: radius } = cache
+		{ hexRadius: radius, colGap, rowGap } = cache
 
-	function drawHex(fill: string | CanvasGradient, stroke: string | CanvasGradient) {
+	function drawBorder(fill: string | CanvasGradient, stroke: string | CanvasGradient) {
 		ctx.beginPath()
 		ctx.moveTo(radius, 0)
 		ctx.lineTo(0.5 * radius, -h * radius)
@@ -241,49 +244,92 @@ function makeDrawCell(state: State, cache: RenderCache) {
 		ctx.stroke()
 	}
 
-	function fillCellNumber(n: number, color = "white") {
+	function drawHexLabel(n: string, color = "white") {
 		ctx.fillStyle = color
-		ctx.fillText(n.toString(), 0, 0.1 * radius)
+		ctx.fillText(n, 0, 0.1 * radius)
 	}
 
-	return function drawCell(cell: Cell) {
-		if (!cell) return
-		if (cell.type == CellType.ColumnHint) return
+	return function drawHex(x: number, y: number, hex: Hex) {
+		if (hex.type == HexType.ColumnHint) return
 
-		if (cell.hidden) {
-			drawHex(gradients.yellow, "yellow")
-			return
+		ctx.save()
+		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
+		const scale = 1 + cubicOut(hex.scale) * 0.12
+		ctx.scale(scale, scale)
+		if (hex.hidden) drawBorder(gradients.yellow, "yellow")
+		else {
+			switch (hex.type) {
+				case HexType.Empty:
+					drawBorder(gradients.gray, "darkgray")
+					drawHexLabel(
+						hex.precision == Precision.None
+							? "?"
+							: countImmediateNeighbours(x, y, level).toString(),
+					)
+					break
+				case HexType.Full:
+					drawBorder(gradients.red, "red")
+					if (hex.precision != Precision.None)
+						drawHexLabel(countDistantNeighbours(x, y, level).toString())
+					break
+			}
 		}
-
-		switch (cell.type) {
-			case CellType.Empty:
-				drawHex(gradients.gray, "darkgray")
-				fillCellNumber(0)
-				break
-			case CellType.Full:
-				drawHex(gradients.red, "red")
-				fillCellNumber(0)
-				break
-		}
+		ctx.restore()
 	}
 }
 
-function getFocusedHex(pos: Position, cache: RenderCache, level: Level): [boolean, Position] {
-	const { cellGapH, cellGapV, cellRadius } = cache
+function getFocusedHex(pos: Position, cache: RenderCache, level: Level): Hex | null {
+	const { colGap, rowGap, hexRadius } = cache
 	let min = Infinity,
-		closest: Position = [-1, -1],
-		cur = min,
-		found = false
+		closest: Hex | null = null,
+		cur = min
 	for (let x = 0; x < level.width; x++) {
 		for (let y = 0; y < level.height; y++) {
-			cur = Math.hypot(pos[0] - x * cellGapH, pos[1] - (y + (x % 2) * 0.5) * cellGapV)
-			if (cur < min && cur < cellRadius) {
+			cur = Math.hypot(pos[0] - x * colGap, pos[1] - (y + (x % 2) * 0.5) * rowGap)
+			if (cur < min && cur < hexRadius) {
 				min = cur
-				closest[0] = x
-				closest[1] = y
-				found = true
+				closest = level.hexes[x][y]
 			}
 		}
 	}
-	return [found, closest]
+	return closest
+}
+
+function countImmediateNeighbours(x: number, y: number, level: Level) {
+	return [
+		level.hexes[x + 1]?.[y],
+		level.hexes[x + 1]?.[y + 1],
+		level.hexes[x - 1]?.[y],
+		level.hexes[x - 1]?.[y - 1],
+		level.hexes[x]?.[y + 1],
+		level.hexes[x]?.[y - 1],
+	].filter(hex => hex && hex.type == HexType.Full).length
+}
+
+function countDistantNeighbours(x: number, y: number, level: Level) {
+	return [
+		level.hexes[x + 1]?.[y],
+		level.hexes[x + 1]?.[y + 1],
+		level.hexes[x - 1]?.[y],
+		level.hexes[x - 1]?.[y - 1],
+		level.hexes[x]?.[y + 1],
+		level.hexes[x]?.[y - 1],
+
+		level.hexes[x - 2]?.[y],
+		level.hexes[x - 2]?.[y + 1],
+		level.hexes[x - 2]?.[y + 2],
+
+		level.hexes[x - 1]?.[y - 1],
+		level.hexes[x - 1]?.[y + 2],
+
+		level.hexes[x]?.[y - 2],
+		level.hexes[x]?.[y + 2],
+
+		level.hexes[x + 1]?.[y - 1],
+		level.hexes[x + 1]?.[y + 2],
+
+		level.hexes[x + 2]?.[y],
+		level.hexes[x + 2]?.[y + 1],
+		level.hexes[x + 2]?.[y + 2],
+	].filter(hex => hex && hex.type == HexType.Full).length
 }
