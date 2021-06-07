@@ -1,4 +1,4 @@
-import { clamp } from "$lib/utils"
+import { clamp, randInt } from "$lib/utils"
 import { cubicOut } from "svelte/easing"
 
 export type Level = {
@@ -68,52 +68,38 @@ type RenderCache = {
 }
 
 export function parse(text: string): Level {
-	if (text == "test")
+	if (text == "test") {
+		const width = randInt(5, 30),
+			height = randInt(5, 20)
 		return {
 			title: "Test",
 			author: "DrFill",
 			flavor: "This is a test\nover two lines",
-			width: 5,
-			height: 5,
-			hexes: [
-				[
-					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 0, scale: 0 },
-					{ type: HexType.Empty, hidden: false, precision: Precision.None, scale: 0 },
-					{ type: HexType.Empty, hidden: true, precision: Precision.Number, scale: 0 },
-					{ type: HexType.Empty, hidden: true, precision: Precision.Precise, scale: 0 },
-					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 1, scale: 0 },
-				],
-				[
-					{ type: HexType.Full, hidden: true, precision: Precision.None, scale: 0 },
-					{ type: HexType.Empty, hidden: false, precision: Precision.None, scale: 0 },
-					{ type: HexType.Empty, hidden: false, precision: Precision.Number, scale: 0 },
-					{ type: HexType.Empty, hidden: false, precision: Precision.Precise, scale: 0 },
-					null,
-				],
-				[
-					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 2, scale: 0 },
-					{ type: HexType.Full, hidden: true, precision: Precision.Number, scale: 0 },
-					{ type: HexType.Full, hidden: false, precision: Precision.None, scale: 0 },
-					{ type: HexType.Full, hidden: false, precision: Precision.Number, scale: 0 },
-					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 3, scale: 0 },
-				],
-				[
-					{ type: HexType.Full, hidden: false, precision: Precision.None, scale: 0 },
-					{ type: HexType.Empty, hidden: true, precision: Precision.None, scale: 0 },
-					{ type: HexType.Empty, hidden: true, precision: Precision.Number, scale: 0 },
-					{ type: HexType.Empty, hidden: false, precision: Precision.Precise, scale: 0 },
-					null,
-				],
-				[
-					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 4, scale: 0 },
-					{ type: HexType.Empty, hidden: true, precision: Precision.None, scale: 0 },
-					{ type: HexType.Empty, hidden: false, precision: Precision.Number, scale: 0 },
-					{ type: HexType.Empty, hidden: true, precision: Precision.Precise, scale: 0 },
-					{ type: HexType.ColumnHint, precision: Precision.Number, angle: 5, scale: 0 },
-				],
-			],
+			width,
+			height,
+			hexes: Array(width)
+				.fill(0)
+				.map(_ =>
+					Array(height)
+						.fill(0)
+						.map(_ => {
+							const t = Math.random(),
+								precision = Math.random() < 0.5 ? Precision.None : Precision.Number,
+								hidden = Math.random() < 0.5
+							if (t < 0.2) return { type: HexType.Full, precision, hidden, scale: 0 }
+							else if (t < 0.3)
+								return {
+									type: HexType.ColumnHint,
+									precision: Precision.Number,
+									angle: randInt(0, 6) as any,
+									scale: 0,
+								}
+							else if (t < 0.8) return { type: HexType.Empty, precision, hidden, scale: 0 }
+							else return null
+						}),
+				),
 		}
-	else throw new Error("Invalid level string")
+	} else throw new Error("Invalid level string")
 }
 
 export function setup(canvas: HTMLCanvasElement, level: Level): State {
@@ -148,8 +134,8 @@ export function render(delta: number, state: State) {
 	// recompute constants if size changes
 	if (sizeChanged) {
 		cache.hexRadius = Math.min(
-			clamp((0.8 * height) / (2 * level.height), 20, 70),
-			clamp((0.8 * width) / (2 * level.width), 20, 70),
+			clamp((0.93 * height) / (2 * level.height), 20, 70),
+			clamp((0.93 * width) / (2 * level.width), 20, 70),
 		)
 		const gap = 1.06
 		cache.rowGap = cache.hexRadius * h * 2 * gap
@@ -159,8 +145,8 @@ export function render(delta: number, state: State) {
 		gradients.yellow.addColorStop(0, "#e7dd7e")
 		gradients.yellow.addColorStop(1, "#ead61f")
 		gradients.red = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
-		gradients.red.addColorStop(0, "#e36868")
-		gradients.red.addColorStop(1, "#c32222")
+		gradients.red.addColorStop(0, "#F472B6")
+		gradients.red.addColorStop(1, "#DB2777")
 		gradients.gray = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
 		gradients.gray.addColorStop(0, "darkgray")
 		gradients.gray.addColorStop(1, "gray")
@@ -168,7 +154,7 @@ export function render(delta: number, state: State) {
 		state.sizeChanged = false
 	}
 
-	const { colGap, rowGap } = cache,
+	const { colGap, rowGap, hexRadius } = cache,
 		drawHex = makeDrawHex(state, cache),
 		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
 		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
@@ -177,11 +163,10 @@ export function render(delta: number, state: State) {
 			cursor[1] - height / 2 - boardOffsetY,
 		] as Position,
 		focusedHex = getFocusedHex(boardCursor, cache, level),
-		scaleSpeed = delta * (1000 / 300) // 300ms animation
+		scaleSpeed = delta * 5 // 200ms animation
 
 	ctx.clearRect(0, 0, width, height)
 	ctx.save()
-	ctx.font = colGap + "px 'Louis George Cafe'"
 	ctx.textAlign = "center"
 	ctx.textBaseline = "middle"
 	ctx.translate(width / 2, height / 2)
@@ -200,7 +185,7 @@ export function render(delta: number, state: State) {
 	}
 	if (focusedHex) {
 		focusedHex.scale = clamp(focusedHex.scale + scaleSpeed, 0, 1)
-		canvas.style.cursor = focusedHex.type != HexType.ColumnHint ? "pointer" : "initial"
+		canvas.style.cursor = isInterractable(focusedHex) ? "pointer" : "initial"
 	} else canvas.style.cursor = "initial"
 	hexes.sort((a, b) => {
 		if (a[2].type == HexType.ColumnHint) return 1
@@ -216,6 +201,10 @@ export function render(delta: number, state: State) {
 	ctx.restore()
 
 	ctx.restore()
+}
+
+function isInterractable(hex: Hex) {
+	return hex.type == HexType.ColumnHint || hex.hidden
 }
 
 function makeDrawHex(state: State, cache: RenderCache) {
@@ -244,35 +233,54 @@ function makeDrawHex(state: State, cache: RenderCache) {
 		ctx.stroke()
 	}
 
-	function drawHexLabel(n: string, color = "white") {
+	function drawHexLabel(label: string, color = "white") {
+		ctx.font = Math.floor(radius) + "px 'Louis George Cafe'"
 		ctx.fillStyle = color
-		ctx.fillText(n, 0, 0.1 * radius)
+		ctx.fillText(label, 0, 0.05 * radius)
+	}
+
+	function drawColLabel(label: string, angle: ColumnHint["angle"], color = "white") {
+		ctx.save()
+		ctx.fillStyle = color
+		ctx.font = `bold ${Math.floor(radius * 0.7)}px 'Louis George Cafe'`
+		ctx.rotate((angle * TAU) / 6)
+		ctx.fillText(label, 0, 0.5 * radius)
+		ctx.restore()
 	}
 
 	return function drawHex(x: number, y: number, hex: Hex) {
-		if (hex.type == HexType.ColumnHint) return
-
 		ctx.save()
 		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
-		const scale = 1 + cubicOut(hex.scale) * 0.12
-		ctx.scale(scale, scale)
-		if (hex.hidden) drawBorder(gradients.yellow, "yellow")
-		else {
-			switch (hex.type) {
-				case HexType.Empty:
-					drawBorder(gradients.gray, "darkgray")
-					drawHexLabel(
-						hex.precision == Precision.None
-							? "?"
-							: countImmediateNeighbours(x, y, level).toString(),
-					)
-					break
-				case HexType.Full:
-					drawBorder(gradients.red, "red")
-					if (hex.precision != Precision.None)
-						drawHexLabel(countDistantNeighbours(x, y, level).toString())
-					break
-			}
+		if (isInterractable(hex)) {
+			const scale = 1 + cubicOut(hex.scale) * 0.12
+			ctx.scale(scale, scale)
+		}
+		switch (true) {
+			case hex.type == HexType.ColumnHint:
+				drawColLabel("" + x, (hex as ColumnHint).angle)
+				break
+			case (hex as any).hidden: // TS doesn't detect that this can't be a ColumnHint
+				drawBorder(gradients.yellow, "#FDEE00")
+				break
+			case hex.type == HexType.Empty:
+				drawBorder(gradients.gray, "darkgray")
+				switch (hex.precision) {
+					case Precision.None:
+						drawHexLabel("?")
+						break
+					case Precision.Number:
+						drawHexLabel(countImmediateNeighbours(x, y, level).toString())
+						break
+					case Precision.Precise:
+						drawHexLabel("{" + countImmediateNeighbours(x, y, level) + "}")
+						break
+				}
+				break
+			case hex.type == HexType.Full:
+				drawBorder(gradients.red, "#EC4899")
+				if (hex.precision != Precision.None)
+					drawHexLabel(countDistantNeighbours(x, y, level).toString())
+				break
 		}
 		ctx.restore()
 	}
