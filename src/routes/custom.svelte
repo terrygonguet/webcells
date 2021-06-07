@@ -4,27 +4,29 @@
 	import { fade, fly, slide } from "svelte/transition"
 	import { page } from "$app/stores"
 	import { goto } from "$app/navigation"
-	import { isLeft, Left, map, reduce, Right } from "$lib/result"
+	import { isLeft, isRight, Left, map, reduce, Right } from "$lib/result"
 	import type { Level } from "$lib/game"
 	import { parse } from "$lib/game"
 	import { browser } from "$app/env"
 
-	let width = 0,
-		height = 0,
-		tmpData = $page.query.get("data") ?? ""
+	let tmpData = $page.query.get("data") ?? ""
 
 	$: data = $page.query.get("data")
 	$: b64 = data ? Right(data) : Left<string>("No level string")
 	$: text = map(b64, a => (browser ? atob(a) : Buffer.from(a, "base64").toString("utf-8")))
 	$: level = map<string, Level>(text, parse)
 	$: isValidLevel = reduce(level, l => true, false)
+	$: levelName = isRight(level) ? level.item.title : "Paste a level!"
+	$: pageTitle = `Custom Puzzle - ${levelName} - WebCells`
 
 	function onSubmit() {
 		goto(`/custom?data=${tmpData}`)
 	}
 </script>
 
-<svelte:window bind:innerWidth={width} bind:innerHeight={height} />
+<svelte:head>
+	<title>{pageTitle}</title>
+</svelte:head>
 
 <main class="grid overflow-hidden" in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	{#if !isValidLevel}
@@ -65,8 +67,6 @@
 			in:fade={fadeIn}
 			out:fade={fadeOut}
 			class="w-full h-full col-start-1 row-start-1"
-			{height}
-			{width}
 			use:game={{ level: level.item }}
 		>
 			Your browser is not supported, please use <a
