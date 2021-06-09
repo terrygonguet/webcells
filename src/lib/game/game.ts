@@ -15,7 +15,6 @@ export type EmptyHex = {
 	type: HexType.Empty
 	hidden: boolean
 	precision: Precision
-	scale: number
 	hint: HintLevel
 }
 
@@ -23,7 +22,6 @@ export type FullHex = {
 	type: HexType.Full
 	hidden: boolean
 	precision: Precision.None | Precision.Number
-	scale: number
 	hint: HintLevel
 }
 
@@ -32,7 +30,6 @@ export type ColumnHint = {
 	precision: Precision.Number | Precision.Precise
 	// number of 60° increments to rotate counter-clockwise
 	angle: 0 | 1 | 2 | 3 | 4 | 5
-	scale: number
 	hint: HintLevel
 }
 
@@ -75,18 +72,16 @@ export function parse(text: string): Level {
 							const t = Math.random(),
 								precision = Math.random() < 0.5 ? Precision.None : Precision.Number,
 								hidden = Math.random() < 0.5
-							if (t < 0.2)
-								return { type: HexType.Full, precision, hidden, scale: 0, hint: HintLevel.None }
+							if (t < 0.2) return { type: HexType.Full, precision, hidden, hint: HintLevel.None }
 							else if (t < 0.3)
 								return {
 									type: HexType.ColumnHint,
 									precision: Precision.Number,
 									angle: randInt(0, 6) as ColumnHint["angle"],
-									scale: 0,
 									hint: HintLevel.None,
 								}
 							else if (t < 0.8)
-								return { type: HexType.Empty, precision, hidden, scale: 0, hint: HintLevel.None }
+								return { type: HexType.Empty, precision, hidden, hint: HintLevel.None }
 							else return null
 						}),
 				),

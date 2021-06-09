@@ -11,8 +11,6 @@ import {
 	HintLevel,
 } from "./game"
 
-type GradientsDict = { [name: string]: CanvasGradient }
-
 export type State = {
 	level: Level
 	ctx: CanvasRenderingContext2D
@@ -30,7 +28,15 @@ type RenderCache = {
 	colGap: number
 	boardOffsetX: number
 	boardOffsetY: number
+	displayProps: (DisplayProps | null)[][]
 }
+
+type DisplayProps = {
+	scale: number
+	hintOpacity: number
+}
+
+type GradientsDict = { [name: string]: CanvasGradient }
 
 export function setup(canvas: HTMLCanvasElement, level: Level): State {
 	const ctx = canvas.getContext("2d")
@@ -59,6 +65,7 @@ const TAU = 2 * Math.PI,
 		colGap: 0,
 		boardOffsetX: 0,
 		boardOffsetY: 0,
+		displayProps: [],
 	},
 	gap = 1.06
 export function render(delta: number, state: State) {
@@ -81,9 +88,10 @@ export function render(delta: number, state: State) {
 		state.sizeChanged = false
 	}
 
-	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX } = cache,
+	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX, displayProps } = cache,
 		boardPos = screen2board(cursor, state, cache),
 		focusedHex = boardPos ? level.hexes[boardPos[0]]?.[boardPos[1]] : null,
+		focusedDP = boardPos ? displayProps[boardPos[0]]?.[boardPos[1]] : null,
 		scaleSpeed = delta * 5 // 200ms animation
 
 	ctx.clearRect(0, 0, width, height)
@@ -96,38 +104,39 @@ export function render(delta: number, state: State) {
 	const hexes: [number, number, Hex][] = []
 	for (let i = 0; i < level.width; i++) {
 		for (let j = 0; j < level.height; j++) {
-			const hex = level.hexes[i][j]
+			const hex = level.hexes[i]?.[j],
+				dp = displayProps[i]?.[j]
 			if (!hex) continue
+			drawHex(i, j, hex)
 			hexes.push([i, j, hex])
-			if (focusedHex != hex) hex.scale = clamp(hex.scale - scaleSpeed, 0, 1)
+			if (dp) {
+				if (focusedHex != hex) dp.scale = clamp(dp.scale - scaleSpeed, 0, 1)
+				dp.hintOpacity = clamp(
+					dp.hintOpacity + scaleSpeed * (hex.hint == HintLevel.Shown ? 1 : -1),
+					0,
+					1,
+				)
+			}
 		}
 	}
-	if (focusedHex) {
-		focusedHex.scale = clamp(focusedHex.scale + scaleSpeed, 0, 1)
+
+	if (focusedHex && focusedDP) {
+		focusedDP.scale = clamp(focusedDP.scale + scaleSpeed, 0, 1)
 		canvas.style.cursor = isInterractable(focusedHex) ? "pointer" : "initial"
 	} else canvas.style.cursor = "initial"
-	hexes.sort((a, b) => {
-		if (a[2].type == HexType.ColumnHint) return 1
-		else {
-			if (b[2].type == HexType.ColumnHint) return -1
-			else return a[2].scale - b[2].scale
-		}
-	})
-	for (const [x, y, hex] of hexes) {
-		drawHex(x, y, hex)
-	}
+
 	for (const [x, y, hex] of hexes) {
 		drawHint(x, y, hex)
 	}
 
 	ctx.restore()
 
-	function drawBorder(hex: FullHex | EmptyHex) {
+	function drawBorder(hex: FullHex | EmptyHex, displayProps: DisplayProps | null) {
 		switch (true) {
 			case hex.hidden:
 				ctx.fillStyle = gradients.yellow
 				ctx.strokeStyle = "#FDEE00"
-				const scale = 1 + cubicOut(hex.scale) * 0.12
+				const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
 				ctx.scale(scale, scale)
 				break
 			case hex.type == HexType.Empty:
@@ -158,21 +167,29 @@ export function render(delta: number, state: State) {
 		ctx.stroke()
 	}
 
-	function drawHexLabel(hex: FullHex | EmptyHex, neighbours: (Hex | null)[]) {
-		const scale = 1 + cubicOut(hex.scale) * 0.12
+	function drawHexLabel(
+		hex: FullHex | EmptyHex,
+		neighbours: (Hex | null)[],
+		displayProps: DisplayProps | null,
+	) {
+		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
 		ctx.scale(scale, scale)
-		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4 + 0.6 * (displayProps?.hintOpacity ?? 1)
 		ctx.font = Math.floor(hexRadius) + "px 'Louis George Cafe'"
 		ctx.fillStyle = "white"
 		ctx.fillText(countFullHexes(neighbours).toString(), 0, 0.05 * hexRadius)
 	}
 
-	function drawColLabel(hex: ColumnHint, neighbours: (Hex | null)[]) {
+	function drawColLabel(
+		hex: ColumnHint,
+		neighbours: (Hex | null)[],
+		displayProps: DisplayProps | null,
+	) {
 		const label = countFullHexes(neighbours).toString(),
-			scale = 1 + cubicOut(hex.scale) * 0.12
+			scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
 
 		ctx.save()
-		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4 + 0.6 * (displayProps?.hintOpacity ?? 1)
 		ctx.fillStyle = "white"
 		ctx.font = `bold ${Math.floor(hexRadius * 0.7)}px 'Louis George Cafe'`
 		ctx.rotate(hex.angle * (TAU / 6))
@@ -185,31 +202,35 @@ export function render(delta: number, state: State) {
 	function drawHex(x: number, y: number, hex: Hex) {
 		ctx.save()
 		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
+		const dp = displayProps[x]?.[y]
 
 		if (hex.type == HexType.ColumnHint) {
-			drawColLabel(hex, inColumn(x, y, hex.angle, level))
+			drawColLabel(hex, inColumn(x, y, hex.angle, level), dp)
 		} else if (hex.hidden) {
-			drawBorder(hex)
+			drawBorder(hex, dp)
 		} else if (hex.type == HexType.Empty) {
-			drawBorder(hex)
+			drawBorder(hex, dp)
 			switch (hex.precision) {
 				case Precision.Number:
-					drawHexLabel(hex, immediateNeighbours(x, y, level))
+					drawHexLabel(hex, immediateNeighbours(x, y, level), dp)
 					break
 				case Precision.Precise:
-					drawHexLabel(hex, immediateNeighbours(x, y, level))
+					drawHexLabel(hex, immediateNeighbours(x, y, level), dp)
 					break
 			}
 		} else if (hex.type == HexType.Full) {
-			drawBorder(hex)
-			if (hex.precision != Precision.None) drawHexLabel(hex, distantNeighbours(x, y, level))
+			drawBorder(hex, dp)
+			if (hex.precision != Precision.None) drawHexLabel(hex, distantNeighbours(x, y, level), dp)
 		}
 
 		ctx.restore()
 	}
 
 	function drawHint(x: number, y: number, hex: Hex) {
-		if (hex.hint != HintLevel.Shown || hex.precision == Precision.None) return
+		const dp = displayProps[x]?.[y],
+			opacity = cubicOut(dp?.hintOpacity ?? 1)
+
+		if ((hex.hint != HintLevel.Shown && !dp?.hintOpacity) || hex.precision == Precision.None) return
 
 		ctx.save()
 		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
@@ -217,7 +238,7 @@ export function render(delta: number, state: State) {
 		if (hex.type == HexType.ColumnHint) {
 			ctx.rotate(hex.angle * (TAU / 6))
 			ctx.fillStyle = "white"
-			ctx.globalAlpha = 0.5
+			ctx.globalAlpha = 0.5 * opacity
 			ctx.fillRect(-0.05 * hexRadius, hexRadius, 0.1 * hexRadius, state.width * state.height)
 		} else if (hex.type == HexType.Empty) {
 			ctx.beginPath()
@@ -244,9 +265,9 @@ export function render(delta: number, state: State) {
 			ctx.strokeStyle = "gray"
 			ctx.lineWidth = 0.1 * hexRadius
 			ctx.fillStyle = gradients.gray
-			ctx.globalAlpha = 0.3
+			ctx.globalAlpha = 0.3 * opacity
 			ctx.fill()
-			ctx.globalAlpha = 0.7
+			ctx.globalAlpha = 0.7 * opacity
 			ctx.stroke()
 		} else if (hex.type == HexType.Full) {
 			ctx.beginPath()
@@ -284,9 +305,9 @@ export function render(delta: number, state: State) {
 			ctx.strokeStyle = "#EC4899"
 			ctx.lineWidth = 0.1 * hexRadius
 			ctx.fillStyle = gradients.red
-			ctx.globalAlpha = 0.3
+			ctx.globalAlpha = 0.3 * opacity
 			ctx.fill()
-			ctx.globalAlpha = 0.7
+			ctx.globalAlpha = 0.7 * opacity
 			ctx.stroke()
 		}
 
@@ -306,9 +327,12 @@ function getRenderCache({ width, height, level }: State): RenderCache {
 		rowGap = hexRadius * h * 2 * gap,
 		colGap = hexRadius * 1.5 * gap,
 		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
-		boardOffsetY = (-level.height / 2 + 0.2) * rowGap
+		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
+		displayProps: DisplayProps[][] = level.hexes.map(col =>
+			col.map(_ => ({ scale: 0, hintOpacity: 0 })),
+		)
 
-	return { hexRadius, rowGap, colGap, boardOffsetX, boardOffsetY }
+	return { hexRadius, rowGap, colGap, boardOffsetX, boardOffsetY, displayProps }
 }
 
 export function screen2board(
