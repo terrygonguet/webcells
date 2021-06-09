@@ -80,8 +80,8 @@ export function render(delta: number, state: State) {
 	}
 
 	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX } = cache,
-		[fx, fy] = screen2board(cursor, state, cache),
-		focusedHex = level.hexes[fx]?.[fy],
+		boardPos = screen2board(cursor, state, cache),
+		focusedHex = boardPos ? level.hexes[boardPos[0]]?.[boardPos[1]] : null,
 		scaleSpeed = delta * 5 // 200ms animation
 
 	ctx.clearRect(0, 0, width, height)
@@ -210,7 +210,7 @@ export function screen2board(
 	screenPos: Position,
 	state: State,
 	cache = getRenderCache(state),
-): Position {
+): Position | null {
 	const { colGap, rowGap, hexRadius, boardOffsetX, boardOffsetY } = cache,
 		{ level, width, height } = state,
 		boardCursor = [
@@ -231,5 +231,5 @@ export function screen2board(
 			}
 		}
 	}
-	return closest
+	return min != Infinity ? closest : null
 }

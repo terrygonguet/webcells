@@ -26,12 +26,9 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 		state.cursor[0] = Math.round(e.clientX)
 		state.cursor[1] = Math.round(e.clientY)
 		const boardPos = screen2board(state.cursor, state),
-			result = uncoverHex(
-				boardPos[0],
-				boardPos[1],
-				e.button == 2 ? HexType.Empty : HexType.Full,
-				level,
-			)
+			result =
+				boardPos &&
+				uncoverHex(boardPos[0], boardPos[1], e.button == 2 ? HexType.Empty : HexType.Full, level)
 	}
 
 	let old = performance.now()
