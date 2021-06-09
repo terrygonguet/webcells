@@ -27,6 +27,8 @@ type RenderCache = {
 	hexRadius: number
 	rowGap: number
 	colGap: number
+	boardOffsetX: number
+	boardOffsetY: number
 }
 
 export function setup(canvas: HTMLCanvasElement, level: Level): State {
@@ -54,19 +56,15 @@ const TAU = 2 * Math.PI,
 		hexRadius: 0,
 		rowGap: 0,
 		colGap: 0,
+		boardOffsetX: 0,
+		boardOffsetY: 0,
 	}
 export function render(delta: number, state: State) {
 	const { width, height, ctx, gradients, level, sizeChanged, cursor, canvas } = state
 
 	// recompute constants if size changes
 	if (sizeChanged) {
-		cache.hexRadius = Math.min(
-			clamp((0.93 * height) / (2 * level.height), 20, 70),
-			clamp((0.93 * width) / (2 * level.width), 20, 70),
-		)
-		const gap = 1.06
-		cache.rowGap = cache.hexRadius * h * 2 * gap
-		cache.colGap = cache.hexRadius * 1.5 * gap
+		Object.assign(cache, getRenderCache(state))
 
 		gradients.yellow = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
 		gradients.yellow.addColorStop(0, "#e7dd7e")
@@ -81,24 +79,16 @@ export function render(delta: number, state: State) {
 		state.sizeChanged = false
 	}
 
-	const { colGap, rowGap, hexRadius } = cache,
-		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
-		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
-		boardCursor = [
-			cursor[0] - width / 2 - boardOffsetX,
-			cursor[1] - height / 2 - boardOffsetY,
-		] as Position,
-		focusedHex = getFocusedHex(boardCursor, cache, level),
+	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX } = cache,
+		[fx, fy] = screen2board(cursor, state, cache),
+		focusedHex = level.hexes[fx]?.[fy],
 		scaleSpeed = delta * 5 // 200ms animation
 
 	ctx.clearRect(0, 0, width, height)
 	ctx.save()
 	ctx.textAlign = "center"
 	ctx.textBaseline = "middle"
-	ctx.translate(width / 2, height / 2)
-
-	ctx.save()
-	ctx.translate(boardOffsetX, boardOffsetY)
+	ctx.translate(width / 2 + boardOffsetX, height / 2 + boardOffsetY)
 
 	const hexes: [number, number, Hex][] = []
 	for (let i = 0; i < level.width; i++) {
@@ -123,8 +113,6 @@ export function render(delta: number, state: State) {
 	for (const [x, y, hex] of hexes) {
 		drawHex(x, y, hex)
 	}
-
-	ctx.restore()
 
 	ctx.restore()
 
@@ -204,17 +192,42 @@ export function render(delta: number, state: State) {
 	}
 }
 
-function getFocusedHex(pos: Position, cache: RenderCache, level: Level): Hex | null {
-	const { colGap, rowGap, hexRadius } = cache
+function getRenderCache({ width, height, level }: State): RenderCache {
+	const hexRadius = Math.min(
+			clamp((0.93 * height) / (2 * level.height), 20, 70),
+			clamp((0.93 * width) / (2 * level.width), 20, 70),
+		),
+		gap = 1.06,
+		rowGap = hexRadius * h * 2 * gap,
+		colGap = hexRadius * 1.5 * gap,
+		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
+		boardOffsetY = (-level.height / 2 + 0.2) * rowGap
+
+	return { hexRadius, rowGap, colGap, boardOffsetX, boardOffsetY }
+}
+
+export function screen2board(
+	screenPos: Position,
+	state: State,
+	cache = getRenderCache(state),
+): Position {
+	const { colGap, rowGap, hexRadius, boardOffsetX, boardOffsetY } = cache,
+		{ level, width, height } = state,
+		boardCursor = [
+			screenPos[0] - width / 2 - boardOffsetX,
+			screenPos[1] - height / 2 - boardOffsetY,
+		] as Position,
+		closest = [0, 0] as Position
+
 	let min = Infinity,
-		closest: Hex | null = null,
 		cur = min
 	for (let x = 0; x < level.width; x++) {
 		for (let y = 0; y < level.height; y++) {
-			cur = Math.hypot(pos[0] - x * colGap, pos[1] - (y + (x % 2) * 0.5) * rowGap)
+			cur = Math.hypot(boardCursor[0] - x * colGap, boardCursor[1] - (y + (x % 2) * 0.5) * rowGap)
 			if (cur < min && cur < hexRadius) {
 				min = cur
-				closest = level.hexes[x][y]
+				closest[0] = x
+				closest[1] = y
 			}
 		}
 	}

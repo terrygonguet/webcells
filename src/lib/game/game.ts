@@ -82,6 +82,26 @@ export function parse(text: string): Level {
 	} else throw new Error("Invalid level string")
 }
 
+export enum UncoveringResult {
+	Nothing,
+	Correct,
+	Incorrect,
+}
+export function uncoverHex(
+	x: number,
+	y: number,
+	expected: HexType.Empty | HexType.Full,
+	level: Level,
+) {
+	const hex = level.hexes[x]?.[y]
+	if (!hex || hex.type == HexType.ColumnHint || !hex.hidden) return UncoveringResult.Nothing
+	const correct = hex.type == expected
+	if (correct) {
+		hex.hidden = false
+		return UncoveringResult.Correct
+	} else return UncoveringResult.Incorrect
+}
+
 export function isInterractable(hex: Hex) {
 	return hex.type == HexType.ColumnHint || hex.hidden
 }
@@ -89,14 +109,15 @@ export function isInterractable(hex: Hex) {
 const immediateNeighboursCountCache = new Map<string, number>()
 export function countImmediateNeighbours(x: number, y: number, level: Level) {
 	const cacheId = `${x} ${y}`,
-		cached = immediateNeighboursCountCache.get(cacheId)
+		cached = immediateNeighboursCountCache.get(cacheId),
+		oddCol = x % 2 ? 1 : -1
 	if (cached) return cached
 
 	const neighbours = [
 		level.hexes[x + 1]?.[y],
-		level.hexes[x + 1]?.[y + 1],
+		level.hexes[x + 1]?.[y + oddCol],
 		level.hexes[x - 1]?.[y],
-		level.hexes[x - 1]?.[y - 1],
+		level.hexes[x - 1]?.[y + oddCol],
 		level.hexes[x]?.[y + 1],
 		level.hexes[x]?.[y - 1],
 	].filter(hex => hex && hex.type == HexType.Full)
@@ -108,33 +129,34 @@ export function countImmediateNeighbours(x: number, y: number, level: Level) {
 const distantNeighboursCountCache = new Map<string, number>()
 export function countDistantNeighbours(x: number, y: number, level: Level): number {
 	const cacheId = `${x} ${y}`,
-		cached = distantNeighboursCountCache.get(cacheId)
+		cached = distantNeighboursCountCache.get(cacheId),
+		oddCol = x % 2 ? 1 : -1
 	if (cached) return cached
 
 	const neighbours = [
 		level.hexes[x + 1]?.[y],
-		level.hexes[x + 1]?.[y + 1],
+		level.hexes[x + 1]?.[y + oddCol],
 		level.hexes[x - 1]?.[y],
-		level.hexes[x - 1]?.[y - 1],
+		level.hexes[x - 1]?.[y + oddCol],
 		level.hexes[x]?.[y + 1],
 		level.hexes[x]?.[y - 1],
 
+		level.hexes[x - 2]?.[y - 1],
 		level.hexes[x - 2]?.[y],
 		level.hexes[x - 2]?.[y + 1],
-		level.hexes[x - 2]?.[y + 2],
 
-		level.hexes[x - 1]?.[y - 1],
-		level.hexes[x - 1]?.[y + 2],
+		level.hexes[x - 1]?.[y + oddCol * 2],
+		level.hexes[x - 1]?.[y - oddCol],
 
 		level.hexes[x]?.[y - 2],
 		level.hexes[x]?.[y + 2],
 
-		level.hexes[x + 1]?.[y - 1],
-		level.hexes[x + 1]?.[y + 2],
+		level.hexes[x + 1]?.[y + oddCol * 2],
+		level.hexes[x + 1]?.[y - oddCol],
 
+		level.hexes[x + 2]?.[y - 1],
 		level.hexes[x + 2]?.[y],
 		level.hexes[x + 2]?.[y + 1],
-		level.hexes[x + 2]?.[y + 2],
 	].filter(hex => hex && hex.type == HexType.Full)
 
 	distantNeighboursCountCache.set(cacheId, neighbours.length)

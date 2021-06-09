@@ -1,4 +1,4 @@
-import { Level, render, setup } from "$lib/game"
+import { HexType, Level, render, screen2board, setup, uncoverHex } from "$lib/game"
 
 type GameActionOptions = {
 	level: Level
@@ -21,6 +21,19 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 		state.cursor[1] = Math.round(e.clientY)
 	}
 
+	function onClick(e: MouseEvent) {
+		e.preventDefault()
+		state.cursor[0] = Math.round(e.clientX)
+		state.cursor[1] = Math.round(e.clientY)
+		const boardPos = screen2board(state.cursor, state),
+			result = uncoverHex(
+				boardPos[0],
+				boardPos[1],
+				e.button == 2 ? HexType.Empty : HexType.Full,
+				level,
+			)
+	}
+
 	let old = performance.now()
 	let rafID = requestAnimationFrame(function raf(time) {
 		const delta = (time - old) / 1000
@@ -30,12 +43,16 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 	})
 	window.addEventListener("resize", onResize)
 	el.addEventListener("pointermove", onPointerMove)
+	el.addEventListener("click", onClick)
+	el.addEventListener("contextmenu", onClick)
 
 	return {
 		destroy() {
 			cancelAnimationFrame(rafID)
 			window.removeEventListener("resize", onResize)
 			el.removeEventListener("pointermove", onPointerMove)
+			el.removeEventListener("click", onClick)
+			el.removeEventListener("contextmenu", onClick)
 		},
 	}
 }
