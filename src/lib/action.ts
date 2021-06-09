@@ -1,4 +1,4 @@
-import { HexType, Level, render, screen2board, setup, uncoverHex } from "$lib/game"
+import { Level, render, screen2board, setup, interact, InteractionType } from "$lib/game"
 
 type GameActionOptions = {
 	level: Level
@@ -25,10 +25,14 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 		e.preventDefault()
 		state.cursor[0] = Math.round(e.clientX)
 		state.cursor[1] = Math.round(e.clientY)
-		const boardPos = screen2board(state.cursor, state),
-			result =
-				boardPos &&
-				uncoverHex(boardPos[0], boardPos[1], e.button == 2 ? HexType.Empty : HexType.Full, level)
+		const boardPos = screen2board(state.cursor, state)
+		if (boardPos)
+			interact(
+				boardPos[0],
+				boardPos[1],
+				e.button == 2 ? InteractionType.Two : InteractionType.One,
+				level,
+			)
 	}
 
 	let old = performance.now()

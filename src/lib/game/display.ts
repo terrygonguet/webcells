@@ -1,13 +1,14 @@
 import { clamp } from "$lib/utils"
 import { cubicOut } from "svelte/easing"
-import type { Hex, Level, Position, ColumnHint } from "./game"
+import type { Hex, Level, Position, ColumnHint, FullHex, EmptyHex } from "./game"
 import {
-	countDistantNeighbours,
-	countImmediateNeighbours,
-	countInColumn,
+	distantNeighbours,
+	immediateNeighbours,
+	inColumn,
 	isInterractable,
 	HexType,
 	Precision,
+	HintLevel,
 } from "./game"
 
 type GradientsDict = { [name: string]: CanvasGradient }
@@ -116,7 +117,24 @@ export function render(delta: number, state: State) {
 
 	ctx.restore()
 
-	function drawBorder(fill: string | CanvasGradient, stroke: string | CanvasGradient) {
+	function drawBorder(hex: FullHex | EmptyHex) {
+		switch (true) {
+			case hex.hidden:
+				ctx.fillStyle = gradients.yellow
+				ctx.strokeStyle = "#FDEE00"
+				const scale = 1 + cubicOut(hex.scale) * 0.12
+				ctx.scale(scale, scale)
+				break
+			case hex.type == HexType.Empty:
+				ctx.fillStyle = gradients.gray
+				ctx.strokeStyle = "gray"
+				break
+			case hex.type == HexType.Full:
+				ctx.fillStyle = gradients.red
+				ctx.strokeStyle = "#EC4899"
+				break
+		}
+
 		ctx.beginPath()
 		ctx.moveTo(hexRadius, 0)
 		ctx.lineTo(0.5 * hexRadius, -h * hexRadius)
@@ -126,10 +144,7 @@ export function render(delta: number, state: State) {
 		ctx.lineTo(0.5 * hexRadius, h * hexRadius)
 		ctx.closePath()
 
-		ctx.fillStyle = fill
 		ctx.fill()
-
-		ctx.strokeStyle = stroke
 		ctx.lineWidth = clamp(0.06 * hexRadius, 1, 10)
 		ctx.stroke()
 
@@ -138,64 +153,69 @@ export function render(delta: number, state: State) {
 		ctx.stroke()
 	}
 
-	function drawHexLabel(label: string, color = "white") {
+	function drawHexLabel(hex: FullHex | EmptyHex, neighbours: (Hex | null)[]) {
+		const scale = 1 + cubicOut(hex.scale) * 0.12
+		ctx.scale(scale, scale)
 		ctx.font = Math.floor(hexRadius) + "px 'Louis George Cafe'"
-		ctx.fillStyle = color
-		ctx.fillText(label, 0, 0.05 * hexRadius)
+		ctx.fillStyle = "white"
+		ctx.fillText(countFullHexes(neighbours).toString(), 0, 0.05 * hexRadius)
 	}
 
-	function drawColLabel(label: string, angle: ColumnHint["angle"], color = "white") {
+	function drawColLabel(hex: ColumnHint, neighbours: (Hex | null)[]) {
+		const { hint, angle } = hex,
+			label = countFullHexes(neighbours).toString()
 		ctx.save()
-		ctx.fillStyle = color
-		ctx.font = `bold ${Math.floor(hexRadius * 0.7)}px 'Louis George Cafe'`
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.5
+		ctx.fillStyle = "white"
 		ctx.rotate((angle * TAU) / 6)
-		ctx.fillText(label, 0, 0.5 * hexRadius)
+		if (hint == HintLevel.Shown) {
+			ctx.globalAlpha = 0.4
+			ctx.fillRect(-0.05 * hexRadius, hexRadius, 0.1 * hexRadius, state.width * state.height)
+			ctx.globalAlpha = 1
+		}
+		ctx.translate(0, 0.5 * hexRadius)
+		ctx.font = `bold ${Math.floor(hexRadius * 0.7)}px 'Louis George Cafe'`
+		const scale = 1 + cubicOut(hex.scale) * 0.12
+		ctx.scale(scale, scale)
+		ctx.fillText(label, 0, 0)
 		ctx.restore()
 	}
 
 	function drawHex(x: number, y: number, hex: Hex) {
 		ctx.save()
 		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
-		if (isInterractable(hex)) {
-			const scale = 1 + cubicOut(hex.scale) * 0.12
-			ctx.scale(scale, scale)
+
+		if (hex.type == HexType.ColumnHint) {
+			drawColLabel(hex, inColumn(x, y, hex.angle, level))
+		} else if (hex.hidden) {
+			drawBorder(hex)
+		} else if (hex.type == HexType.Empty) {
+			drawBorder(hex)
+			switch (hex.precision) {
+				case Precision.Number:
+					drawHexLabel(hex, immediateNeighbours(x, y, level))
+					break
+				case Precision.Precise:
+					drawHexLabel(hex, immediateNeighbours(x, y, level))
+					break
+			}
+		} else if (hex.type == HexType.Full) {
+			drawBorder(hex)
+			if (hex.precision != Precision.None) drawHexLabel(hex, distantNeighbours(x, y, level))
 		}
-		switch (true) {
-			case hex.type == HexType.ColumnHint:
-				const { angle } = hex as ColumnHint
-				drawColLabel(countInColumn(x, y, angle, level).toString(), angle)
-				break
-			case (hex as any).hidden: // TS doesn't detect that this can't be a ColumnHint
-				drawBorder(gradients.yellow, "#FDEE00")
-				break
-			case hex.type == HexType.Empty:
-				drawBorder(gradients.gray, "darkgray")
-				switch (hex.precision) {
-					case Precision.None:
-						drawHexLabel("?")
-						break
-					case Precision.Number:
-						drawHexLabel(countImmediateNeighbours(x, y, level).toString())
-						break
-					case Precision.Precise:
-						drawHexLabel("{" + countImmediateNeighbours(x, y, level) + "}")
-						break
-				}
-				break
-			case hex.type == HexType.Full:
-				drawBorder(gradients.red, "#EC4899")
-				if (hex.precision != Precision.None)
-					drawHexLabel(countDistantNeighbours(x, y, level).toString())
-				break
-		}
+
 		ctx.restore()
 	}
 }
 
+function countFullHexes(list: (Hex | null)[]) {
+	return list.reduce((acc, cur) => acc + (cur && cur.type == HexType.Full ? 1 : 0), 0)
+}
+
 function getRenderCache({ width, height, level }: State): RenderCache {
 	const hexRadius = Math.min(
-			clamp((0.93 * height) / (2 * level.height), 20, 70),
-			clamp((0.93 * width) / (2 * level.width), 20, 70),
+			clamp((0.99 * height) / (2 * level.height), 20, 70),
+			clamp((0.99 * width) / (2 * level.width), 20, 70),
 		),
 		gap = 1.06,
 		rowGap = hexRadius * h * 2 * gap,
