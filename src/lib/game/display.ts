@@ -59,7 +59,8 @@ const TAU = 2 * Math.PI,
 		colGap: 0,
 		boardOffsetX: 0,
 		boardOffsetY: 0,
-	}
+	},
+	gap = 1.06
 export function render(delta: number, state: State) {
 	const { width, height, ctx, gradients, level, sizeChanged, cursor, canvas } = state
 
@@ -89,6 +90,7 @@ export function render(delta: number, state: State) {
 	ctx.save()
 	ctx.textAlign = "center"
 	ctx.textBaseline = "middle"
+	ctx.lineJoin = "round"
 	ctx.translate(width / 2 + boardOffsetX, height / 2 + boardOffsetY)
 
 	const hexes: [number, number, Hex][] = []
@@ -113,6 +115,9 @@ export function render(delta: number, state: State) {
 	})
 	for (const [x, y, hex] of hexes) {
 		drawHex(x, y, hex)
+	}
+	for (const [x, y, hex] of hexes) {
+		drawHint(x, y, hex)
 	}
 
 	ctx.restore()
@@ -156,26 +161,22 @@ export function render(delta: number, state: State) {
 	function drawHexLabel(hex: FullHex | EmptyHex, neighbours: (Hex | null)[]) {
 		const scale = 1 + cubicOut(hex.scale) * 0.12
 		ctx.scale(scale, scale)
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4
 		ctx.font = Math.floor(hexRadius) + "px 'Louis George Cafe'"
 		ctx.fillStyle = "white"
 		ctx.fillText(countFullHexes(neighbours).toString(), 0, 0.05 * hexRadius)
 	}
 
 	function drawColLabel(hex: ColumnHint, neighbours: (Hex | null)[]) {
-		const { hint, angle } = hex,
-			label = countFullHexes(neighbours).toString()
+		const label = countFullHexes(neighbours).toString(),
+			scale = 1 + cubicOut(hex.scale) * 0.12
+
 		ctx.save()
-		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.5
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4
 		ctx.fillStyle = "white"
-		ctx.rotate((angle * TAU) / 6)
-		if (hint == HintLevel.Shown) {
-			ctx.globalAlpha = 0.4
-			ctx.fillRect(-0.05 * hexRadius, hexRadius, 0.1 * hexRadius, state.width * state.height)
-			ctx.globalAlpha = 1
-		}
-		ctx.translate(0, 0.5 * hexRadius)
 		ctx.font = `bold ${Math.floor(hexRadius * 0.7)}px 'Louis George Cafe'`
-		const scale = 1 + cubicOut(hex.scale) * 0.12
+		ctx.rotate(hex.angle * (TAU / 6))
+		ctx.translate(0, 0.5 * hexRadius)
 		ctx.scale(scale, scale)
 		ctx.fillText(label, 0, 0)
 		ctx.restore()
@@ -206,6 +207,91 @@ export function render(delta: number, state: State) {
 
 		ctx.restore()
 	}
+
+	function drawHint(x: number, y: number, hex: Hex) {
+		if (hex.hint != HintLevel.Shown || hex.precision == Precision.None) return
+
+		ctx.save()
+		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
+
+		if (hex.type == HexType.ColumnHint) {
+			ctx.rotate(hex.angle * (TAU / 6))
+			ctx.fillStyle = "white"
+			ctx.globalAlpha = 0.5
+			ctx.fillRect(-0.05 * hexRadius, hexRadius, 0.1 * hexRadius, state.width * state.height)
+		} else if (hex.type == HexType.Empty) {
+			ctx.beginPath()
+			ctx.moveTo(2 * gap * hexRadius, 0)
+			ctx.lineTo(2.5 * gap * hexRadius, h * gap * hexRadius)
+			ctx.lineTo(2 * gap * hexRadius, 2 * h * gap * hexRadius)
+			ctx.lineTo(gap * hexRadius, 2 * h * gap * hexRadius)
+			ctx.lineTo(0.5 * gap * hexRadius, 3 * h * gap * hexRadius)
+			ctx.lineTo(-0.5 * gap * hexRadius, 3 * h * gap * hexRadius)
+			ctx.lineTo(-1 * gap * hexRadius, 2 * h * gap * hexRadius)
+			ctx.lineTo(-2 * gap * hexRadius, 2 * h * gap * hexRadius)
+			ctx.lineTo(-2.5 * gap * hexRadius, h * gap * hexRadius)
+			ctx.lineTo(-2 * gap * hexRadius, 0)
+			ctx.lineTo(-2.5 * gap * hexRadius, -h * gap * hexRadius)
+			ctx.lineTo(-2 * gap * hexRadius, -2 * h * gap * hexRadius)
+			ctx.lineTo(-1 * gap * hexRadius, -2 * h * gap * hexRadius)
+			ctx.lineTo(-0.5 * gap * hexRadius, -3 * h * gap * hexRadius)
+			ctx.lineTo(0.5 * gap * hexRadius, -3 * h * gap * hexRadius)
+			ctx.lineTo(gap * hexRadius, -2 * h * gap * hexRadius)
+			ctx.lineTo(2 * gap * hexRadius, -2 * h * gap * hexRadius)
+			ctx.lineTo(2.5 * gap * hexRadius, -h * gap * hexRadius)
+			ctx.lineTo(2 * gap * hexRadius, 0)
+			ctx.closePath()
+			ctx.strokeStyle = "gray"
+			ctx.lineWidth = 0.1 * hexRadius
+			ctx.fillStyle = gradients.gray
+			ctx.globalAlpha = 0.3
+			ctx.fill()
+			ctx.globalAlpha = 0.7
+			ctx.stroke()
+		} else if (hex.type == HexType.Full) {
+			ctx.beginPath()
+			ctx.moveTo(4 * gap * hexRadius, 0)
+			ctx.lineTo(3.5 * gap * hexRadius, h * gap * hexRadius)
+			ctx.lineTo(4 * gap * hexRadius, 2 * h * gap * hexRadius)
+			ctx.lineTo(3.5 * gap * hexRadius, 3 * h * gap * hexRadius)
+			ctx.lineTo(2.5 * gap * hexRadius, 3 * h * gap * hexRadius)
+			ctx.lineTo(2 * gap * hexRadius, 4 * h * gap * hexRadius)
+			ctx.lineTo(gap * hexRadius, 4 * h * gap * hexRadius)
+			ctx.lineTo(0.5 * gap * hexRadius, 5 * h * gap * hexRadius)
+			ctx.lineTo(-0.5 * gap * hexRadius, 5 * h * gap * hexRadius)
+			ctx.lineTo(-1 * gap * hexRadius, 4 * h * gap * hexRadius)
+			ctx.lineTo(-2 * gap * hexRadius, 4 * h * gap * hexRadius)
+			ctx.lineTo(-2.5 * gap * hexRadius, 3 * h * gap * hexRadius)
+			ctx.lineTo(-3.5 * gap * hexRadius, 3 * h * gap * hexRadius)
+			ctx.lineTo(-4 * gap * hexRadius, 2 * h * gap * hexRadius)
+			ctx.lineTo(-3.5 * gap * hexRadius, h * gap * hexRadius)
+			ctx.lineTo(-4 * gap * hexRadius, 0)
+			ctx.lineTo(-3.5 * gap * hexRadius, -h * gap * hexRadius)
+			ctx.lineTo(-4 * gap * hexRadius, -2 * h * gap * hexRadius)
+			ctx.lineTo(-3.5 * gap * hexRadius, -3 * h * gap * hexRadius)
+			ctx.lineTo(-2.5 * gap * hexRadius, -3 * h * gap * hexRadius)
+			ctx.lineTo(-2 * gap * hexRadius, -4 * h * gap * hexRadius)
+			ctx.lineTo(-1 * gap * hexRadius, -4 * h * gap * hexRadius)
+			ctx.lineTo(-0.5 * gap * hexRadius, -5 * h * gap * hexRadius)
+			ctx.lineTo(0.5 * gap * hexRadius, -5 * h * gap * hexRadius)
+			ctx.lineTo(gap * hexRadius, -4 * h * gap * hexRadius)
+			ctx.lineTo(2 * gap * hexRadius, -4 * h * gap * hexRadius)
+			ctx.lineTo(2.5 * gap * hexRadius, -3 * h * gap * hexRadius)
+			ctx.lineTo(3.5 * gap * hexRadius, -3 * h * gap * hexRadius)
+			ctx.lineTo(4 * gap * hexRadius, -2 * h * gap * hexRadius)
+			ctx.lineTo(3.5 * gap * hexRadius, -h * gap * hexRadius)
+			ctx.closePath()
+			ctx.strokeStyle = "#EC4899"
+			ctx.lineWidth = 0.1 * hexRadius
+			ctx.fillStyle = gradients.red
+			ctx.globalAlpha = 0.3
+			ctx.fill()
+			ctx.globalAlpha = 0.7
+			ctx.stroke()
+		}
+
+		ctx.restore()
+	}
 }
 
 function countFullHexes(list: (Hex | null)[]) {
@@ -217,7 +303,6 @@ function getRenderCache({ width, height, level }: State): RenderCache {
 			clamp((0.99 * height) / (2 * level.height), 20, 70),
 			clamp((0.99 * width) / (2 * level.width), 20, 70),
 		),
-		gap = 1.06,
 		rowGap = hexRadius * h * 2 * gap,
 		colGap = hexRadius * 1.5 * gap,
 		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
