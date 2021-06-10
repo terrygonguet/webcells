@@ -67,7 +67,7 @@ const TAU = 2 * Math.PI,
 		boardOffsetY: 0,
 		displayProps: [],
 	},
-	gap = 1.06
+	gap = 1.1
 export function render(delta: number, state: State) {
 	const { width, height, ctx, gradients, level, sizeChanged, cursor, canvas } = state
 
@@ -110,7 +110,7 @@ export function render(delta: number, state: State) {
 			drawHex(i, j, hex, dp)
 			hexes.push([i, j, hex, dp])
 			if (dp) {
-				const scaleDir = focusedHex == hex ? 1 : -1,
+				const scaleDir = focusedHex == hex && hex.type != HexType.ColumnHint && hex.hidden ? 1 : -1,
 					opacityDir = hex.hint == HintLevel.Shown ? 1 : -1
 				dp.scale = clamp(dp.scale + scaleDir * animationSpeed, 0, 1)
 				dp.hintOpacity = clamp(dp.hintOpacity + opacityDir * animationSpeed, 0, 1)
@@ -132,21 +132,21 @@ export function render(delta: number, state: State) {
 	function drawBorder(hex: FullHex | EmptyHex, displayProps: DisplayProps | null) {
 		switch (true) {
 			case hex.hidden:
-				ctx.fillStyle = gradients.yellow
-				ctx.strokeStyle = "#FDEE00"
-				const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
-				ctx.scale(scale, scale)
+				ctx.fillStyle = "#111"
+				ctx.strokeStyle = "white"
 				break
 			case hex.type == HexType.Empty:
-				ctx.fillStyle = gradients.gray
-				ctx.strokeStyle = "gray"
+				ctx.fillStyle = "transparent"
+				ctx.strokeStyle = "white"
 				break
 			case hex.type == HexType.Full:
-				ctx.fillStyle = gradients.red
-				ctx.strokeStyle = "#EC4899"
+				ctx.fillStyle = "magenta"
+				ctx.strokeStyle = "white"
 				break
 		}
 
+		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
+		ctx.scale(scale, scale)
 		ctx.beginPath()
 		ctx.moveTo(hexRadius, 0)
 		ctx.lineTo(0.5 * hexRadius, -h * hexRadius)
@@ -157,7 +157,7 @@ export function render(delta: number, state: State) {
 		ctx.closePath()
 
 		ctx.fill()
-		ctx.lineWidth = clamp(0.06 * hexRadius, 1, 10)
+		ctx.lineWidth = clamp(0.1 * hexRadius, 1, 10)
 		ctx.stroke()
 
 		ctx.strokeStyle = "white"
@@ -235,7 +235,7 @@ export function render(delta: number, state: State) {
 			ctx.rotate(hex.angle * (TAU / 6))
 			ctx.fillStyle = "white"
 			ctx.globalAlpha = 0.5 * opacity
-			ctx.fillRect(-0.05 * hexRadius, hexRadius, 0.1 * hexRadius, state.width * state.height)
+			ctx.fillRect(-0.1 * hexRadius, hexRadius, 0.2 * hexRadius, state.width * state.height)
 		} else if (hex.type == HexType.Empty) {
 			ctx.beginPath()
 			ctx.moveTo(2 * gap * hexRadius, 0)
@@ -258,7 +258,7 @@ export function render(delta: number, state: State) {
 			ctx.lineTo(2.5 * gap * hexRadius, -h * gap * hexRadius)
 			ctx.lineTo(2 * gap * hexRadius, 0)
 			ctx.closePath()
-			ctx.strokeStyle = "white"
+			ctx.strokeStyle = "black"
 			ctx.lineWidth = 0.1 * hexRadius
 			ctx.fillStyle = "white"
 			ctx.globalAlpha = 0.3 * opacity
@@ -298,9 +298,9 @@ export function render(delta: number, state: State) {
 			ctx.lineTo(4 * gap * hexRadius, -2 * h * gap * hexRadius)
 			ctx.lineTo(3.5 * gap * hexRadius, -h * gap * hexRadius)
 			ctx.closePath()
-			ctx.strokeStyle = "#ebe59e"
+			ctx.strokeStyle = "magenta"
 			ctx.lineWidth = 0.1 * hexRadius
-			ctx.fillStyle = "#ebe59e"
+			ctx.fillStyle = "white"
 			ctx.globalAlpha = 0.3 * opacity
 			ctx.fill()
 			ctx.globalAlpha = 0.7 * opacity

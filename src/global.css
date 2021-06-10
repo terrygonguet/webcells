@@ -22,7 +22,8 @@
 
 	#svelte {
 		font-family: "Louis George Cafe", sans-serif;
-		background: radial-gradient(theme("colors.indigo.500"), theme("colors.indigo.900"));
+		/* background: radial-gradient(theme("colors.indigo.500"), theme("colors.indigo.900")); */
+		background: linear-gradient(to top right, blue, purple 70%, orange);
 		@apply h-screen text-white grid overflow-hidden;
 	}
 
