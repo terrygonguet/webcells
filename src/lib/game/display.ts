@@ -17,7 +17,6 @@ export type State = {
 	canvas: HTMLCanvasElement
 	width: number
 	height: number
-	gradients: GradientsDict
 	sizeChanged: boolean
 	cursor: Position
 }
@@ -29,6 +28,7 @@ type RenderCache = {
 	boardOffsetX: number
 	boardOffsetY: number
 	displayProps: (DisplayProps | null)[][]
+	hexes: [Hex, DisplayProps | null][]
 }
 
 type DisplayProps = {
@@ -49,7 +49,6 @@ export function setup(canvas: HTMLCanvasElement, level: Level): State {
 		level,
 		ctx,
 		canvas,
-		gradients: {},
 		width: canvas.width,
 		height: canvas.height,
 		sizeChanged: true,
@@ -66,29 +65,19 @@ const TAU = 2 * Math.PI,
 		boardOffsetX: 0,
 		boardOffsetY: 0,
 		displayProps: [],
+		hexes: [],
 	},
 	gap = 1.1
 export function render(delta: number, state: State) {
-	const { width, height, ctx, gradients, level, sizeChanged, cursor, canvas } = state
+	const { width, height, ctx, level, sizeChanged, cursor, canvas } = state
 
 	// recompute constants if size changes
 	if (sizeChanged) {
 		Object.assign(cache, getRenderCache(state))
-
-		gradients.yellow = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
-		gradients.yellow.addColorStop(0, "#e7dd7e")
-		gradients.yellow.addColorStop(1, "#ead61f")
-		gradients.red = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
-		gradients.red.addColorStop(0, "#F472B6")
-		gradients.red.addColorStop(1, "#DB2777")
-		gradients.gray = ctx.createRadialGradient(0, 0, 0, 0, 0, cache.hexRadius)
-		gradients.gray.addColorStop(0, "darkgray")
-		gradients.gray.addColorStop(1, "gray")
-
 		state.sizeChanged = false
 	}
 
-	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX, displayProps } = cache,
+	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX, displayProps, hexes } = cache,
 		boardPos = screen2board(cursor, state, cache),
 		focusedHex = boardPos ? level.hexes[boardPos[0]]?.[boardPos[1]] : null,
 		focusedDP = boardPos ? displayProps[boardPos[0]]?.[boardPos[1]] : null,
@@ -101,30 +90,25 @@ export function render(delta: number, state: State) {
 	ctx.lineJoin = "round"
 	ctx.translate(width / 2 + boardOffsetX, height / 2 + boardOffsetY)
 
-	const hexes: [number, number, Hex, DisplayProps | null][] = []
-	for (let i = 0; i < level.width; i++) {
-		for (let j = 0; j < level.height; j++) {
-			const hex = level.hexes[i]?.[j],
-				dp = displayProps[i]?.[j]
-			if (!hex) continue
-			drawHex(i, j, hex, dp)
-			hexes.push([i, j, hex, dp])
-			if (dp) {
-				const scaleDir = focusedHex == hex && hex.type != HexType.ColumnHint && hex.hidden ? 1 : -1,
-					opacityDir = hex.hint == HintLevel.Shown ? 1 : -1
-				dp.scale = clamp(dp.scale + scaleDir * animationSpeed, 0, 1)
-				dp.hintOpacity = clamp(dp.hintOpacity + opacityDir * animationSpeed, 0, 1)
-			}
+	for (const [hex, dp] of hexes) {
+		drawHex(hex, dp)
+		if (dp) {
+			const scaleDir = focusedHex == hex && hex.type != HexType.ColumnHint && hex.hidden ? 1 : -1,
+				opacityDir = hex.hint == HintLevel.Shown ? 1 : -1
+			dp.scale = clamp(dp.scale + scaleDir * animationSpeed, 0, 1)
+			dp.hintOpacity = clamp(dp.hintOpacity + opacityDir * animationSpeed, 0, 1)
 		}
 	}
 
+	// draw focused Hex on top of the other Hexes
 	if (focusedHex) {
 		canvas.style.cursor = isInterractable(focusedHex) ? "pointer" : "initial"
-		boardPos && drawHex(boardPos[0], boardPos[1], focusedHex, focusedDP)
+		drawHex(focusedHex, focusedDP)
 	} else canvas.style.cursor = "initial"
 
-	for (const [x, y, hex, dp] of hexes) {
-		drawHint(x, y, hex, dp)
+	// draw hints on top of everything
+	for (const [hex, dp] of hexes) {
+		drawHint(hex.x, hex.y, hex, dp)
 	}
 
 	ctx.restore()
@@ -197,27 +181,28 @@ export function render(delta: number, state: State) {
 		ctx.restore()
 	}
 
-	function drawHex(x: number, y: number, hex: Hex, dp: DisplayProps | null) {
+	function drawHex(hex: Hex, dp: DisplayProps | null) {
 		ctx.save()
-		ctx.translate(x * colGap, (y + (x % 2) * 0.5) * rowGap)
+		ctx.translate(hex.x * colGap, (hex.y + (hex.x % 2) * 0.5) * rowGap)
 
 		if (hex.type == HexType.ColumnHint) {
-			drawColLabel(hex, inColumn(x, y, hex.angle, level), dp)
+			drawColLabel(hex, inColumn(hex.x, hex.y, hex.angle, level), dp)
 		} else if (hex.hidden) {
 			drawBorder(hex, dp)
 		} else if (hex.type == HexType.Empty) {
 			drawBorder(hex, dp)
 			switch (hex.precision) {
 				case Precision.Number:
-					drawHexLabel(hex, immediateNeighbours(x, y, level), dp)
+					drawHexLabel(hex, immediateNeighbours(hex.x, hex.y, level), dp)
 					break
 				case Precision.Precise:
-					drawHexLabel(hex, immediateNeighbours(x, y, level), dp)
+					drawHexLabel(hex, immediateNeighbours(hex.x, hex.y, level), dp)
 					break
 			}
 		} else if (hex.type == HexType.Full) {
 			drawBorder(hex, dp)
-			if (hex.precision != Precision.None) drawHexLabel(hex, distantNeighbours(x, y, level), dp)
+			if (hex.precision != Precision.None)
+				drawHexLabel(hex, distantNeighbours(hex.x, hex.y, level), dp)
 		}
 
 		ctx.restore()
@@ -317,8 +302,8 @@ function countFullHexes(list: (Hex | null)[]) {
 
 function getRenderCache({ width, height, level }: State): RenderCache {
 	const hexRadius = Math.min(
-			clamp((0.99 * height) / (2 * level.height), 20, 70),
-			clamp((0.99 * width) / (2 * level.width), 20, 70),
+			clamp((0.9 * height) / (2 * level.height), 20, 70),
+			clamp((0.9 * width) / (2 * level.width), 20, 70),
 		),
 		rowGap = hexRadius * h * 2 * gap,
 		colGap = hexRadius * 1.5 * gap,
@@ -326,9 +311,13 @@ function getRenderCache({ width, height, level }: State): RenderCache {
 		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
 		displayProps: DisplayProps[][] = level.hexes.map(col =>
 			col.map(_ => ({ scale: 0, hintOpacity: 0 })),
-		)
+		),
+		hexes: [Hex, DisplayProps | null][] = (level.hexes.flat().filter(Boolean) as Hex[]).map(h => [
+			h,
+			displayProps[h?.x]?.[h?.y],
+		])
 
-	return { hexRadius, rowGap, colGap, boardOffsetX, boardOffsetY, displayProps }
+	return { hexRadius, rowGap, colGap, boardOffsetX, boardOffsetY, displayProps, hexes }
 }
 
 export function screen2board(

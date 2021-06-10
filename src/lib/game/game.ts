@@ -16,6 +16,8 @@ export type EmptyHex = {
 	hidden: boolean
 	precision: Precision
 	hint: HintLevel
+	x: number
+	y: number
 }
 
 export type FullHex = {
@@ -23,6 +25,8 @@ export type FullHex = {
 	hidden: boolean
 	precision: Precision.None | Precision.Number
 	hint: HintLevel
+	x: number
+	y: number
 }
 
 export type ColumnHint = {
@@ -31,6 +35,8 @@ export type ColumnHint = {
 	// number of 60° increments to rotate counter-clockwise
 	angle: 0 | 1 | 2 | 3 | 4 | 5
 	hint: HintLevel
+	x: number
+	y: number
 }
 
 export enum Precision {
@@ -54,10 +60,9 @@ export enum HintLevel {
 export type Position = [number, number]
 
 export function parse(text: string): Level {
-	if (text == "test") {
-		const width = randInt(5, 30),
-			height = randInt(5, 20)
-		return {
+	const width = randInt(5, 30),
+		height = randInt(5, 20),
+		level: Level = {
 			title: "Test",
 			author: "DrFill",
 			flavor: "This is a test\nover two lines",
@@ -65,28 +70,48 @@ export function parse(text: string): Level {
 			height,
 			hexes: Array(width)
 				.fill(0)
-				.map(_ =>
+				.map((_, x) =>
 					Array(height)
 						.fill(0)
-						.map(_ => {
+						.map((_, y) => {
 							const t = Math.random(),
 								precision = Math.random() < 0.5 ? Precision.None : Precision.Number,
 								hidden = Math.random() < 0.5
-							if (t < 0.2) return { type: HexType.Full, precision, hidden, hint: HintLevel.None }
+							if (t < 0.2)
+								return { type: HexType.Full, precision, hidden, hint: HintLevel.None, x, y }
 							else if (t < 0.3)
 								return {
 									type: HexType.ColumnHint,
 									precision: Precision.Number,
 									angle: randInt(0, 6) as ColumnHint["angle"],
-									hint: HintLevel.None,
+									hint: HintLevel.Shown,
+									x,
+									y,
 								}
 							else if (t < 0.8)
-								return { type: HexType.Empty, precision, hidden, hint: HintLevel.None }
+								return { type: HexType.Empty, precision, hidden, hint: HintLevel.None, x, y }
 							else return null
 						}),
 				),
 		}
-	} else throw new Error("Invalid level string")
+	level.hexes.flat().forEach(h => {
+		if (!h) return
+		let toCheck
+		switch (h.type) {
+			case HexType.ColumnHint:
+				toCheck = inColumn(h.x, h.y, h.angle, level)
+				break
+			case HexType.Empty:
+				toCheck = immediateNeighbours(h.x, h.y, level)
+				break
+			case HexType.Full:
+				toCheck = distantNeighbours(h.x, h.y, level)
+				break
+		}
+		if (toCheck.every(isColumnHintOrUncovered)) h.hint = HintLevel.Hidden
+	})
+
+	return level
 }
 
 export enum InteractionType {
@@ -109,21 +134,50 @@ export function interact(x: number, y: number, type: InteractionType, level: Lev
 		}
 	} else if (hex.type == HexType.Empty) {
 		switch (type) {
-			case InteractionType.One:
-				break
+			// case InteractionType.One:
+			// 	break
 			case InteractionType.Two:
 				hex.hidden = false
+				hideNeighboursHints(hex, level)
 				break
 		}
 	} else if (hex.type == HexType.Full) {
 		switch (type) {
 			case InteractionType.One:
 				hex.hidden = false
+				hideNeighboursHints(hex, level)
 				break
-			case InteractionType.Two:
-				break
+			// case InteractionType.Two:
+			// 	break
 		}
 	}
+}
+
+function hideNeighboursHints(hex: Hex, level: Level) {
+	const getNeighbours = {
+			[HexType.Empty]: (hex: EmptyHex) => immediateNeighbours(hex.x, hex.y, level),
+			[HexType.Full]: (hex: FullHex) => distantNeighbours(hex.x, hex.y, level),
+			[HexType.ColumnHint]: (hex: ColumnHint) => inColumn(hex.x, hex.y, hex.angle, level),
+		},
+		toCheck = new Set([
+			...distantNeighbours(hex.x, hex.y, level),
+			...inColumn(hex.x, hex.y, 0, level),
+			...inColumn(hex.x, hex.y, 1, level),
+			...inColumn(hex.x, hex.y, 2, level),
+			...inColumn(hex.x, hex.y, 3, level),
+			...inColumn(hex.x, hex.y, 4, level),
+			...inColumn(hex.x, hex.y, 5, level),
+		])
+
+	for (const hex of toCheck) {
+		if (!hex || hex.hint == HintLevel.Hidden) continue
+		if (getNeighbours[hex.type](hex as any).every(isColumnHintOrUncovered))
+			hex.hint = HintLevel.Hidden
+	}
+}
+
+function isColumnHintOrUncovered(hex: Hex | null) {
+	return !hex || hex.type == HexType.ColumnHint || !hex.hidden
 }
 
 export function isInterractable(hex: Hex) {
@@ -189,7 +243,7 @@ export function distantNeighbours(x: number, y: number, level: Level) {
 
 const inColumnCache = new Map<string, (Hex | null)[]>()
 export function inColumn(x: number, y: number, angle: ColumnHint["angle"], level: Level) {
-	const cacheId = `${x} ${y}`,
+	const cacheId = `${x} ${y} ${angle}`,
 		cached = inColumnCache.get(cacheId)
 	if (cached) return cached
 
