@@ -36,8 +36,6 @@ type DisplayProps = {
 	hintOpacity: number
 }
 
-type GradientsDict = { [name: string]: CanvasGradient }
-
 export function setup(canvas: HTMLCanvasElement, level: Level): State {
 	const ctx = canvas.getContext("2d")
 	if (!ctx) throw new Error("Can't get canvas rendering context")
@@ -290,17 +288,14 @@ export function render(delta: number, state: State) {
 	}
 }
 
-const labelCache = new Map<Hex, string>()
 function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): string {
-	const cached = labelCache.get(hex)
-	if (cached) return cached
 	const n = countFullHexes(neighbours)
 	let label = ""
 	switch (hex.type) {
 		case HexType.ColumnHint:
 			switch (hex.precision) {
 				case Precision.Number:
-					label = n.toString()
+					return n.toString()
 				case Precision.Precise:
 					if (n < 2) return n.toString()
 					const neighbours = inColumn(hex.x, hex.y, hex.angle, level)
@@ -316,21 +311,21 @@ function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): strin
 							}
 						} else started = false
 					}
-					if (l == n) label = "[" + n + "]"
-					else label = "-" + n + "-"
+					if (l == n) return "[" + n + "]"
+					else return "-" + n + "-"
 			}
 			break
 		case HexType.Empty:
 			switch (hex.precision) {
 				case Precision.None:
-					label = ""
+					return ""
 					break
 				case Precision.Number:
-					label = n.toString()
+					return n.toString()
 					break
 				case Precision.Precise:
-					if (n == 0) label = ""
-					else if (n < 2) label = n.toString()
+					if (n == 0) return ""
+					else if (n < 2) return n.toString()
 					else {
 						const neighbours = [
 							...immediateNeighbours(hex.x, hex.y, level),
@@ -348,8 +343,8 @@ function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): strin
 							} else started = false
 						}
 						// l can be more than n if all 6 neighbours are full
-						if (l >= n) label = "[" + n + "]"
-						else label = "-" + n + "-"
+						if (l >= n) return "[" + n + "]"
+						else return "-" + n + "-"
 					}
 					break
 			}
@@ -357,15 +352,14 @@ function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): strin
 		case HexType.Full:
 			switch (hex.precision) {
 				case Precision.None:
-					label = ""
+					return ""
 					break
 				case Precision.Number:
-					label = n.toString()
+					return n.toString()
 					break
 			}
 			break
 	}
-	labelCache.set(hex, label)
 	return label
 }
 

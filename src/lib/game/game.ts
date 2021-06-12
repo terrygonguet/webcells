@@ -197,11 +197,7 @@ export function isInterractable(hex: Hex) {
 	return hex.type == HexType.ColumnHint || hex.hidden || hex.precision != Precision.None
 }
 
-const immediateNeighboursCache = new Map<string, (Hex | null)[]>()
 export function immediateNeighbours(x: number, y: number, level: Level) {
-	const cacheId = `${x} ${y}`,
-		cached = immediateNeighboursCache.get(cacheId)
-	if (cached) return cached
 	let neighbours
 
 	// It needs to be in continuous order to compute labels
@@ -225,53 +221,41 @@ export function immediateNeighbours(x: number, y: number, level: Level) {
 		]
 	}
 
-	immediateNeighboursCache.set(cacheId, neighbours)
 	return neighbours
 }
 
-const distantNeighboursCache = new Map<string, (Hex | null)[]>()
 export function distantNeighbours(x: number, y: number, level: Level) {
-	const cacheId = `${x} ${y}`,
-		cached = distantNeighboursCache.get(cacheId),
-		oddCol = x % 2 ? 1 : -1
-	if (cached) return cached
+	const oddCol = x % 2 ? 1 : -1,
+		neighbours = [
+			level.hexes[x + 1]?.[y] ?? null,
+			level.hexes[x + 1]?.[y + oddCol] ?? null,
+			level.hexes[x - 1]?.[y] ?? null,
+			level.hexes[x - 1]?.[y + oddCol] ?? null,
+			level.hexes[x]?.[y + 1] ?? null,
+			level.hexes[x]?.[y - 1] ?? null,
 
-	const neighbours = [
-		level.hexes[x + 1]?.[y] ?? null,
-		level.hexes[x + 1]?.[y + oddCol] ?? null,
-		level.hexes[x - 1]?.[y] ?? null,
-		level.hexes[x - 1]?.[y + oddCol] ?? null,
-		level.hexes[x]?.[y + 1] ?? null,
-		level.hexes[x]?.[y - 1] ?? null,
+			level.hexes[x - 2]?.[y - 1] ?? null,
+			level.hexes[x - 2]?.[y] ?? null,
+			level.hexes[x - 2]?.[y + 1] ?? null,
 
-		level.hexes[x - 2]?.[y - 1] ?? null,
-		level.hexes[x - 2]?.[y] ?? null,
-		level.hexes[x - 2]?.[y + 1] ?? null,
+			level.hexes[x - 1]?.[y + oddCol * 2] ?? null,
+			level.hexes[x - 1]?.[y - oddCol] ?? null,
 
-		level.hexes[x - 1]?.[y + oddCol * 2] ?? null,
-		level.hexes[x - 1]?.[y - oddCol] ?? null,
+			level.hexes[x]?.[y - 2] ?? null,
+			level.hexes[x]?.[y + 2] ?? null,
 
-		level.hexes[x]?.[y - 2] ?? null,
-		level.hexes[x]?.[y + 2] ?? null,
+			level.hexes[x + 1]?.[y + oddCol * 2] ?? null,
+			level.hexes[x + 1]?.[y - oddCol] ?? null,
 
-		level.hexes[x + 1]?.[y + oddCol * 2] ?? null,
-		level.hexes[x + 1]?.[y - oddCol] ?? null,
+			level.hexes[x + 2]?.[y - 1] ?? null,
+			level.hexes[x + 2]?.[y] ?? null,
+			level.hexes[x + 2]?.[y + 1] ?? null,
+		]
 
-		level.hexes[x + 2]?.[y - 1] ?? null,
-		level.hexes[x + 2]?.[y] ?? null,
-		level.hexes[x + 2]?.[y + 1] ?? null,
-	]
-
-	distantNeighboursCache.set(cacheId, neighbours)
 	return neighbours
 }
 
-const inColumnCache = new Map<string, (Hex | null)[]>()
 export function inColumn(x: number, y: number, angle: ColumnHint["angle"], level: Level) {
-	const cacheId = `${x} ${y} ${angle}`,
-		cached = inColumnCache.get(cacheId)
-	if (cached) return cached
-
 	const offset = [
 			[0, 1],
 			[-1, 0.5],
@@ -290,6 +274,5 @@ export function inColumn(x: number, y: number, angle: ColumnHint["angle"], level
 		hexes.push(level.hexes?.[Math.floor(cx)]?.[Math.floor(cy)] ?? null)
 	} while (cx >= 0 && cx <= level.width && cy >= 0 && cy <= level.height)
 
-	inColumnCache.set(cacheId, hexes)
 	return hexes
 }
