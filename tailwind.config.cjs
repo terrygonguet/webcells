@@ -8,8 +8,10 @@ module.exports = {
 	},
 	plugins: [
 		plugin(function buttons({ addUtilities, addComponents, theme }) {
-			const active = `var(--btn-bg-active, ${theme("colors.pink.500")})`,
-				base = `var(--btn-bg-base, ${theme("colors.pink.600")})`
+			const color1 = `var(--btn-bg-color-1, ${theme("colors.blue.500")})`,
+				color2 = `var(--btn-bg-color-2, ${theme("colors.purple.700")})`,
+				color3 = `var(--btn-bg-color-3, ${theme("colors.yellow.500")})`,
+				color4 = `var(--btn-bg-color-4, ${theme("colors.yellow.600")})`
 			addComponents({
 				".btn": {
 					textAlign: "center",
@@ -19,12 +21,12 @@ module.exports = {
 					textTransform: "uppercase",
 					color: "var(--btn-color, white)",
 					cursor: "pointer",
-					background: `linear-gradient(to bottom right, ${active}, ${active}, ${base})`,
-					backgroundSize: "200% 200%",
-					backgroundPosition: "100% 100%",
+					background: `linear-gradient(to bottom right, ${color1}, ${color2}, ${color3}, ${color4})`,
+					backgroundSize: "300% 300%",
+					backgroundPosition: "0 0",
 					transition: "background-position .3s ease-in-out",
 					"&:hover": {
-						backgroundPosition: "0 0",
+						backgroundPosition: "100% 100%",
 					},
 				},
 			})
