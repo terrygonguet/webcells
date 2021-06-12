@@ -28,9 +28,6 @@
 			theme("colors.purple.700"),
 			theme("colors.yellow.600")
 		);
-		background-size: 140% 140%;
-		background-position: 20% 20%;
-		transition: background-position 2s linear;
 		@apply h-screen text-white grid overflow-hidden;
 	}
 	main {
