@@ -8,6 +8,7 @@
 	import type { Level } from "$lib/game"
 	import { parse } from "$lib/game"
 	import { browser } from "$app/env"
+	import { onMount } from "svelte"
 
 	let tmpData = $page.query.get("data") ?? ""
 
@@ -22,6 +23,20 @@
 	function onSubmit() {
 		goto(`/custom?data=${tmpData}`)
 	}
+
+	function onKeyup(e: KeyboardEvent) {
+		if (e.key == "Enter") {
+			e.preventDefault()
+			onSubmit()
+		}
+	}
+
+	onMount(() => {
+		setTimeout(() => {
+			const txtArea = document.querySelector("textarea[name=data]") as HTMLAreaElement
+			txtArea?.focus()
+		}, 1000)
+	})
 </script>
 
 <svelte:head>
@@ -55,6 +70,7 @@
 					placeholder="It's a long piece of text that looks like: bG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
 					required
 					bind:value={tmpData}
+					on:keyup={onKeyup}
 				/>
 			</label>
 			<nav class="grid grid-cols-2 gap-10">
