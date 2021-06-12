@@ -1,4 +1,4 @@
-import { randInt } from "$lib/utils"
+import { pickEl, randInt } from "$lib/utils"
 
 export type Level = {
 	title: string
@@ -32,7 +32,7 @@ export type FullHex = {
 export type ColumnHint = {
 	type: HexType.ColumnHint
 	precision: Precision.Number | Precision.Precise
-	// number of 60° increments to rotate counter-clockwise
+	// number of 60° increments to rotate clockwise
 	angle: 0 | 1 | 2 | 3 | 4 | 5
 	hint: HintLevel
 	x: number
@@ -60,8 +60,8 @@ export enum HintLevel {
 export type Position = [number, number]
 
 export function parse(text: string): Level {
-	const width = randInt(5, 30),
-		height = randInt(5, 20),
+	const width = randInt(10, 15),
+		height = randInt(10, 15),
 		level: Level = {
 			title: "Test",
 			author: "DrFill",
@@ -75,21 +75,34 @@ export function parse(text: string): Level {
 						.fill(0)
 						.map((_, y) => {
 							const t = Math.random(),
-								precision = Math.random() < 0.5 ? Precision.None : Precision.Number,
 								hidden = Math.random() < 0.5
 							if (t < 0.2)
-								return { type: HexType.Full, precision, hidden, hint: HintLevel.None, x, y }
+								return {
+									type: HexType.Full,
+									precision: Math.random() < 0.5 ? Precision.None : Precision.Number,
+									hidden,
+									hint: HintLevel.None,
+									x,
+									y,
+								}
 							else if (t < 0.3)
 								return {
 									type: HexType.ColumnHint,
-									precision: Precision.Number,
+									precision: Math.random() < 0.5 ? Precision.Precise : Precision.Number,
 									angle: randInt(0, 6) as ColumnHint["angle"],
-									hint: HintLevel.Shown,
+									hint: HintLevel.None,
 									x,
 									y,
 								}
 							else if (t < 0.8)
-								return { type: HexType.Empty, precision, hidden, hint: HintLevel.None, x, y }
+								return {
+									type: HexType.Empty,
+									precision: pickEl([Precision.None, Precision.Number, Precision.Precise]),
+									hidden,
+									hint: HintLevel.None,
+									x,
+									y,
+								}
 							else return null
 						}),
 				),
@@ -187,18 +200,30 @@ export function isInterractable(hex: Hex) {
 const immediateNeighboursCache = new Map<string, (Hex | null)[]>()
 export function immediateNeighbours(x: number, y: number, level: Level) {
 	const cacheId = `${x} ${y}`,
-		cached = immediateNeighboursCache.get(cacheId),
-		oddCol = x % 2 ? 1 : -1
+		cached = immediateNeighboursCache.get(cacheId)
 	if (cached) return cached
+	let neighbours
 
-	const neighbours = [
-		level.hexes[x + 1]?.[y] ?? null,
-		level.hexes[x + 1]?.[y + oddCol] ?? null,
-		level.hexes[x - 1]?.[y] ?? null,
-		level.hexes[x - 1]?.[y + oddCol] ?? null,
-		level.hexes[x]?.[y + 1] ?? null,
-		level.hexes[x]?.[y - 1] ?? null,
-	]
+	// It needs to be in continuous order to compute labels
+	if (x % 2) {
+		neighbours = [
+			level.hexes[x]?.[y - 1] ?? null,
+			level.hexes[x + 1]?.[y] ?? null,
+			level.hexes[x + 1]?.[y + 1] ?? null,
+			level.hexes[x]?.[y + 1] ?? null,
+			level.hexes[x - 1]?.[y + 1] ?? null,
+			level.hexes[x - 1]?.[y] ?? null,
+		]
+	} else {
+		neighbours = [
+			level.hexes[x]?.[y - 1] ?? null,
+			level.hexes[x + 1]?.[y - 1] ?? null,
+			level.hexes[x + 1]?.[y] ?? null,
+			level.hexes[x]?.[y + 1] ?? null,
+			level.hexes[x - 1]?.[y] ?? null,
+			level.hexes[x - 1]?.[y - 1] ?? null,
+		]
+	}
 
 	immediateNeighboursCache.set(cacheId, neighbours)
 	return neighbours

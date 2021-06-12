@@ -91,13 +91,14 @@ export function render(delta: number, state: State) {
 	ctx.translate(width / 2 + boardOffsetX, height / 2 + boardOffsetY)
 
 	for (const [hex, dp] of hexes) {
-		drawHex(hex, dp)
 		if (dp) {
-			const scaleDir = focusedHex == hex && hex.type != HexType.ColumnHint && hex.hidden ? 1 : -1,
+			const scaleDir = focusedHex == hex && (hex.type == HexType.ColumnHint || hex.hidden) ? 1 : -1,
 				opacityDir = hex.hint == HintLevel.Shown ? 1 : -1
 			dp.scale = clamp(dp.scale + scaleDir * animationSpeed, 0, 1)
 			dp.hintOpacity = clamp(dp.hintOpacity + opacityDir * animationSpeed, 0, 1)
 		}
+		if (hex == focusedHex) continue
+		drawHex(hex, dp)
 	}
 
 	// draw focused Hex on top of the other Hexes
@@ -130,7 +131,7 @@ export function render(delta: number, state: State) {
 		}
 
 		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
-		ctx.scale(scale, scale)
+		if (scale != 1) ctx.scale(scale, scale)
 		ctx.beginPath()
 		ctx.moveTo(hexRadius, 0)
 		ctx.lineTo(0.5 * hexRadius, -h * hexRadius)
@@ -154,12 +155,13 @@ export function render(delta: number, state: State) {
 		neighbours: (Hex | null)[],
 		displayProps: DisplayProps | null,
 	) {
-		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
+		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12,
+			label = computeLabel(neighbours, hex, level)
 		ctx.scale(scale, scale)
-		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4 + 0.6 * (displayProps?.hintOpacity ?? 1)
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.2 + 0.8 * (displayProps?.hintOpacity ?? 1)
 		ctx.font = Math.floor(hexRadius) + "px 'Louis George Cafe'"
 		ctx.fillStyle = "white"
-		ctx.fillText(countFullHexes(neighbours).toString(), 0, 0.05 * hexRadius)
+		ctx.fillText(label, 0, 0.05 * hexRadius)
 	}
 
 	function drawColLabel(
@@ -167,11 +169,11 @@ export function render(delta: number, state: State) {
 		neighbours: (Hex | null)[],
 		displayProps: DisplayProps | null,
 	) {
-		const label = countFullHexes(neighbours).toString(),
-			scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
+		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12,
+			label = computeLabel(neighbours, hex, level)
 
 		ctx.save()
-		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.4 + 0.6 * (displayProps?.hintOpacity ?? 1)
+		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.2 + 0.8 * (displayProps?.hintOpacity ?? 1)
 		ctx.fillStyle = "white"
 		ctx.font = `bold ${Math.floor(hexRadius * 0.7)}px 'Louis George Cafe'`
 		ctx.rotate(hex.angle * (TAU / 6))
@@ -191,18 +193,10 @@ export function render(delta: number, state: State) {
 			drawBorder(hex, dp)
 		} else if (hex.type == HexType.Empty) {
 			drawBorder(hex, dp)
-			switch (hex.precision) {
-				case Precision.Number:
-					drawHexLabel(hex, immediateNeighbours(hex.x, hex.y, level), dp)
-					break
-				case Precision.Precise:
-					drawHexLabel(hex, immediateNeighbours(hex.x, hex.y, level), dp)
-					break
-			}
+			drawHexLabel(hex, immediateNeighbours(hex.x, hex.y, level), dp)
 		} else if (hex.type == HexType.Full) {
 			drawBorder(hex, dp)
-			if (hex.precision != Precision.None)
-				drawHexLabel(hex, distantNeighbours(hex.x, hex.y, level), dp)
+			drawHexLabel(hex, distantNeighbours(hex.x, hex.y, level), dp)
 		}
 
 		ctx.restore()
@@ -294,6 +288,85 @@ export function render(delta: number, state: State) {
 
 		ctx.restore()
 	}
+}
+
+const labelCache = new Map<Hex, string>()
+function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): string {
+	const cached = labelCache.get(hex)
+	if (cached) return cached
+	const n = countFullHexes(neighbours)
+	let label = ""
+	switch (hex.type) {
+		case HexType.ColumnHint:
+			switch (hex.precision) {
+				case Precision.Number:
+					label = n.toString()
+				case Precision.Precise:
+					if (n < 2) return n.toString()
+					const neighbours = inColumn(hex.x, hex.y, hex.angle, level)
+					let started = false,
+						l = 0
+					for (const neighbour of neighbours) {
+						if (!neighbour) continue
+						else if (neighbour.type == HexType.Full) {
+							if (started) l++
+							else {
+								l = 1
+								started = true
+							}
+						} else started = false
+					}
+					if (l == n) label = "[" + n + "]"
+					else label = "-" + n + "-"
+			}
+			break
+		case HexType.Empty:
+			switch (hex.precision) {
+				case Precision.None:
+					label = ""
+					break
+				case Precision.Number:
+					label = n.toString()
+					break
+				case Precision.Precise:
+					if (n == 0) label = ""
+					else if (n < 2) label = n.toString()
+					else {
+						const neighbours = [
+							...immediateNeighbours(hex.x, hex.y, level),
+							...immediateNeighbours(hex.x, hex.y, level),
+						]
+						let started = false,
+							l = 0
+						for (const neighbour of neighbours) {
+							if (neighbour && neighbour.type == HexType.Full) {
+								if (started) l++
+								else {
+									l = 1
+									started = true
+								}
+							} else started = false
+						}
+						// l can be more than n if all 6 neighbours are full
+						if (l >= n) label = "[" + n + "]"
+						else label = "-" + n + "-"
+					}
+					break
+			}
+			break
+		case HexType.Full:
+			switch (hex.precision) {
+				case Precision.None:
+					label = ""
+					break
+				case Precision.Number:
+					label = n.toString()
+					break
+			}
+			break
+	}
+	labelCache.set(hex, label)
+	return label
 }
 
 function countFullHexes(list: (Hex | null)[]) {
