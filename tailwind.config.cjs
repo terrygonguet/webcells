@@ -8,8 +8,8 @@ module.exports = {
 	},
 	plugins: [
 		plugin(function buttons({ addUtilities, addComponents, theme }) {
-			const color1 = `var(--btn-bg-color-1, ${theme("colors.blue.500")})`,
-				color2 = `var(--btn-bg-color-2, ${theme("colors.purple.700")})`,
+			const color1 = `var(--btn-bg-color-1, ${theme("colors.pink.400")})`,
+				color2 = `var(--btn-bg-color-2, ${theme("colors.pink.500")})`,
 				color3 = `var(--btn-bg-color-3, ${theme("colors.yellow.500")})`,
 				color4 = `var(--btn-bg-color-4, ${theme("colors.yellow.600")})`
 			addComponents({
