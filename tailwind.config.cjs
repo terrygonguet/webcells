@@ -14,7 +14,9 @@ module.exports = {
 				color4 = `var(--btn-bg-color-4, ${theme("colors.yellow.600")})`
 			addComponents({
 				".btn": {
-					textAlign: "center",
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
 					padding: ".5rem 1rem",
 					fontSize: theme("fontSize.xl"),
 					fontWeight: "bold",
@@ -23,10 +25,12 @@ module.exports = {
 					cursor: "pointer",
 					background: `linear-gradient(to bottom right, ${color1}, ${color2}, ${color3}, ${color4})`,
 					backgroundSize: "300% 300%",
-					backgroundPosition: "0 0",
 					transition: "background-position .3s ease-in-out",
-					"&:hover": {
+					"&:hover, &:active": {
 						backgroundPosition: "100% 100%",
+					},
+					"&:disabled": {
+						backgroundImage: `linear-gradient(to bottom right, darkgray, gray, gray, darkgray)`,
 					},
 				},
 			})

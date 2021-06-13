@@ -14,7 +14,9 @@
 		<div class="my-auto nav">
 			<a class="btn" href="/tutorial" sveltekit:prefetch>Tutorial</a>
 			<a class="btn" href="/custom" sveltekit:prefetch>Play custom level</a>
-			<a class="btn" href="/random" sveltekit:prefetch>Play random level</a>
+			<button class="btn flex-col" href="/random" disabled
+				>Play random level<span class="text-sm">Coming soon</span></button
+			>
 		</div>
 
 		<div class="nav" style="--n-cols: 2">
