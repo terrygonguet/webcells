@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import Game from "$lib/components/Game.svelte"
 	import { parse } from "$lib/game"
 	import { fadeOut, flyInDown } from "$lib/transition"

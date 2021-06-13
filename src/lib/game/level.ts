@@ -1,4 +1,6 @@
+import { showColumnHints } from "$lib/stores"
 import { pickEl, randInt } from "$lib/utils"
+import { get } from "svelte/store"
 import {
 	ColumnHint,
 	distantNeighbours,
@@ -23,6 +25,7 @@ export type Level = {
 export function randomLevel(): Level {
 	const width = randInt(10, 15),
 		height = randInt(10, 15),
+		colHints = get(showColumnHints),
 		level: Level = {
 			title: "Test",
 			author: "DrFill",
@@ -51,7 +54,7 @@ export function randomLevel(): Level {
 									type: HexType.ColumnHint,
 									precision: Math.random() < 0.5 ? Precision.Precise : Precision.Number,
 									angle: randInt(0, 6) as ColumnHint["angle"],
-									hint: HintLevel.None,
+									hint: colHints ? HintLevel.Shown : HintLevel.None,
 									x,
 									y,
 								}
@@ -95,6 +98,7 @@ export function parse(string: string): Level {
 	if (!widthStr || isNaN(parseInt(widthStr))) throw new Error("Missing or invalid width")
 	if (!heightStr || isNaN(parseInt(heightStr))) throw new Error("Missing or invalid height")
 	if (!hexStr) throw new Error("Missing level data")
+	const colHints = get(showColumnHints)
 
 	const width = parseInt(widthStr),
 		height = parseInt(heightStr),
@@ -149,7 +153,7 @@ export function parse(string: string): Level {
 				hex = {
 					type: HexType.ColumnHint,
 					angle: angles[char1] ?? 0,
-					hint: HintLevel.None,
+					hint: colHints ? HintLevel.Shown : HintLevel.None,
 					precision: (precisions[char2] as any) ?? Precision.Number,
 					x,
 					y,
