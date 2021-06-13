@@ -9,6 +9,7 @@
 	import { parse } from "$lib/game"
 	import { browser } from "$app/env"
 	import { onMount } from "svelte"
+	import Game from "$lib/components/Game.svelte"
 
 	let tmpData = $page.query.get("data") ?? ""
 
@@ -79,16 +80,6 @@
 			</nav>
 		</form>
 	{:else}
-		<canvas
-			in:fade={fadeIn}
-			out:fade={fadeOut}
-			class="w-full h-full col-start-1 row-start-1"
-			use:game={{ level: level.item }}
-		>
-			Your browser is not supported, please use <a
-				href="https://www.mozilla.org/en-US/firefox/new/"
-				target="_blank">Firefox</a
-			> or another evergreen browser.
-		</canvas>
+		<Game class="w-full h-full col-start-1 row-start-1" level={level.item} />
 	{/if}
 </main>

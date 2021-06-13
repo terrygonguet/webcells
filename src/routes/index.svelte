@@ -8,12 +8,19 @@
 </svelte:head>
 
 <main in:fade={fadeIn} out:fly={flyOutUp}>
-	<h1 class="text-[7rem] font-thin uppercase">Webcells</h1>
+	<h1 class="text-[9rem] font-thin uppercase">Webcells</h1>
 
-	<nav class="my-auto grid grid-cols-1 md:grid-cols-3 gap-10">
-		<a class="btn" href="/custom" sveltekit:prefetch>Play custom level</a>
-		<a class="btn" href="/random" sveltekit:prefetch>Play random level</a>
-		<a class="btn" href="/editor" sveltekit:prefetch>Level editor</a>
+	<nav class="contents">
+		<div class="my-auto nav">
+			<a class="btn" href="/tutorial" sveltekit:prefetch>Tutorial</a>
+			<a class="btn" href="/custom" sveltekit:prefetch>Play custom level</a>
+			<a class="btn" href="/random" sveltekit:prefetch>Play random level</a>
+		</div>
+
+		<div class="nav" style="--n-cols: 2">
+			<a class="btn" href="/editor" sveltekit:prefetch>Level editor</a>
+			<a class="btn" href="/settings" sveltekit:prefetch>Settings</a>
+		</div>
 	</nav>
 </main>
 
@@ -22,8 +29,25 @@
 		@apply flex flex-col items-center py-12;
 	}
 
-	/* ! HACK - text-[7rem] is broken rn */
+	/* ! HACK */
 	h1 {
-		font-size: 7rem;
+		font-size: 5rem;
+	}
+
+	.nav {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2.5rem;
+	}
+
+	@screen lg {
+		/* ! HACK - text-[9rem] is broken rn */
+		h1 {
+			font-size: 9rem;
+		}
+
+		.nav {
+			grid-template-columns: repeat(var(--n-cols, 3), 1fr);
+		}
 	}
 </style>

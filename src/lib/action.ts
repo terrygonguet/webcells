@@ -2,10 +2,16 @@ import { Level, render, screen2board, setup, interact, InteractionType } from "$
 
 type GameActionOptions = {
 	level: Level
+	width?: number
+	height?: number
+	hexRadius?: number
 }
 
-export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
-	const state = setup(el, level)
+export function game(
+	el: HTMLCanvasElement,
+	{ level, width, height, hexRadius }: GameActionOptions,
+) {
+	const state = setup({ canvas: el, level, width, height, hexRadius })
 
 	function onResize(this: Window, e: UIEvent) {
 		el.width = this.innerWidth
@@ -17,14 +23,14 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 
 	function onPointerMove(e: PointerEvent) {
 		e.preventDefault()
-		state.cursor[0] = Math.round(e.clientX)
-		state.cursor[1] = Math.round(e.clientY)
+		state.cursor[0] = Math.round(e.offsetX)
+		state.cursor[1] = Math.round(e.offsetY)
 	}
 
 	function onClick(e: MouseEvent) {
 		e.preventDefault()
-		state.cursor[0] = Math.round(e.clientX)
-		state.cursor[1] = Math.round(e.clientY)
+		state.cursor[0] = Math.round(e.offsetX)
+		state.cursor[1] = Math.round(e.offsetY)
 		const boardPos = screen2board(state.cursor, state)
 		if (boardPos)
 			interact(
@@ -42,7 +48,7 @@ export function game(el: HTMLCanvasElement, { level }: GameActionOptions) {
 		render(delta, state)
 		rafID = requestAnimationFrame(raf)
 	})
-	window.addEventListener("resize", onResize)
+	if (!width && !height) window.addEventListener("resize", onResize)
 	el.addEventListener("pointermove", onPointerMove)
 	el.addEventListener("click", onClick)
 	el.addEventListener("contextmenu", onClick)

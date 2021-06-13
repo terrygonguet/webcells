@@ -1,13 +1,4 @@
-import { pickEl, randInt } from "$lib/utils"
-
-export type Level = {
-	title: string
-	author: string
-	flavor?: string
-	width: number
-	height: number
-	hexes: (Hex | null)[][]
-}
+import type { Level } from "./level"
 
 export type Hex = EmptyHex | FullHex | ColumnHint
 
@@ -58,74 +49,6 @@ export enum HintLevel {
 }
 
 export type Position = [number, number]
-
-export function parse(text: string): Level {
-	const width = randInt(10, 15),
-		height = randInt(10, 15),
-		level: Level = {
-			title: "Test",
-			author: "DrFill",
-			flavor: "This is a test\nover two lines",
-			width,
-			height,
-			hexes: Array(width)
-				.fill(0)
-				.map((_, x) =>
-					Array(height)
-						.fill(0)
-						.map((_, y) => {
-							const t = Math.random(),
-								hidden = Math.random() < 0.5
-							if (t < 0.2)
-								return {
-									type: HexType.Full,
-									precision: Math.random() < 0.5 ? Precision.None : Precision.Number,
-									hidden,
-									hint: HintLevel.None,
-									x,
-									y,
-								}
-							else if (t < 0.3)
-								return {
-									type: HexType.ColumnHint,
-									precision: Math.random() < 0.5 ? Precision.Precise : Precision.Number,
-									angle: randInt(0, 6) as ColumnHint["angle"],
-									hint: HintLevel.None,
-									x,
-									y,
-								}
-							else if (t < 0.8)
-								return {
-									type: HexType.Empty,
-									precision: pickEl([Precision.None, Precision.Number, Precision.Precise]),
-									hidden,
-									hint: HintLevel.None,
-									x,
-									y,
-								}
-							else return null
-						}),
-				),
-		}
-	level.hexes.flat().forEach(h => {
-		if (!h) return
-		let toCheck
-		switch (h.type) {
-			case HexType.ColumnHint:
-				toCheck = inColumn(h.x, h.y, h.angle, level)
-				break
-			case HexType.Empty:
-				toCheck = immediateNeighbours(h.x, h.y, level)
-				break
-			case HexType.Full:
-				toCheck = distantNeighbours(h.x, h.y, level)
-				break
-		}
-		if (toCheck.every(isColumnHintOrUncovered)) h.hint = HintLevel.Hidden
-	})
-
-	return level
-}
 
 export enum InteractionType {
 	One = "1",
@@ -189,7 +112,7 @@ function hideNeighboursHints(hex: Hex, level: Level) {
 	}
 }
 
-function isColumnHintOrUncovered(hex: Hex | null) {
+export function isColumnHintOrUncovered(hex: Hex | null) {
 	return !hex || hex.type == HexType.ColumnHint || !hex.hidden
 }
 

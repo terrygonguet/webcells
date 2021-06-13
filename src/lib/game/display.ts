@@ -1,6 +1,6 @@
 import { clamp } from "$lib/utils"
 import { cubicOut } from "svelte/easing"
-import type { Hex, Level, Position, ColumnHint, FullHex, EmptyHex } from "./game"
+import type { Hex, Position, ColumnHint, FullHex, EmptyHex } from "./game"
 import {
 	distantNeighbours,
 	immediateNeighbours,
@@ -10,6 +10,7 @@ import {
 	Precision,
 	HintLevel,
 } from "./game"
+import type { Level } from "./level"
 
 export type State = {
 	level: Level
@@ -17,8 +18,10 @@ export type State = {
 	canvas: HTMLCanvasElement
 	width: number
 	height: number
+	hexRadius?: number
 	sizeChanged: boolean
 	cursor: Position
+	cache?: RenderCache
 }
 
 type RenderCache = {
@@ -36,12 +39,19 @@ type DisplayProps = {
 	hintOpacity: number
 }
 
-export function setup(canvas: HTMLCanvasElement, level: Level): State {
+type SetupOptions = {
+	canvas: HTMLCanvasElement
+	level: Level
+	width?: number
+	height?: number
+	hexRadius?: number
+}
+export function setup({ canvas, level, width, height, hexRadius }: SetupOptions): State {
 	const ctx = canvas.getContext("2d")
 	if (!ctx) throw new Error("Can't get canvas rendering context")
 
-	canvas.width = innerWidth
-	canvas.height = innerHeight
+	canvas.width = width ?? innerWidth
+	canvas.height = height ?? innerHeight
 
 	return {
 		level,
@@ -49,6 +59,7 @@ export function setup(canvas: HTMLCanvasElement, level: Level): State {
 		canvas,
 		width: canvas.width,
 		height: canvas.height,
+		hexRadius,
 		sizeChanged: true,
 		cursor: [0, 0],
 	}
@@ -56,27 +67,19 @@ export function setup(canvas: HTMLCanvasElement, level: Level): State {
 
 const TAU = 2 * Math.PI,
 	h = Math.sqrt(3) / 2, // https://www.editions-petiteelisabeth.fr/images/calculs/1_hauteur_triangle_equilateral.png?1472908488
-	cache: RenderCache = {
-		hexRadius: 0,
-		rowGap: 0,
-		colGap: 0,
-		boardOffsetX: 0,
-		boardOffsetY: 0,
-		displayProps: [],
-		hexes: [],
-	},
 	gap = 1.1
 export function render(delta: number, state: State) {
 	const { width, height, ctx, level, sizeChanged, cursor, canvas } = state
 
 	// recompute constants if size changes
-	if (sizeChanged) {
-		Object.assign(cache, getRenderCache(state))
+	if (sizeChanged || !state.cache) {
+		state.cache = getRenderCache(state)
 		state.sizeChanged = false
 	}
 
-	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX, displayProps, hexes } = cache,
-		boardPos = screen2board(cursor, state, cache),
+	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX, displayProps, hexes } =
+			state.cache as RenderCache,
+		boardPos = screen2board(cursor, state, state.cache),
 		focusedHex = boardPos ? level.hexes[boardPos[0]]?.[boardPos[1]] : null,
 		focusedDP = boardPos ? displayProps[boardPos[0]]?.[boardPos[1]] : null,
 		animationSpeed = delta * 5 // 200ms animation
@@ -367,11 +370,13 @@ function countFullHexes(list: (Hex | null)[]) {
 	return list.reduce((acc, cur) => acc + (cur && cur.type == HexType.Full ? 1 : 0), 0)
 }
 
-function getRenderCache({ width, height, level }: State): RenderCache {
-	const hexRadius = Math.min(
-			clamp((0.9 * height) / (2 * level.height), 20, 70),
-			clamp((0.9 * width) / (2 * level.width), 20, 70),
-		),
+function getRenderCache({ width, height, level, hexRadius: defaultRadius }: State): RenderCache {
+	const hexRadius =
+			defaultRadius ??
+			Math.min(
+				clamp((0.9 * height) / (2 * level.height), 20, 70),
+				clamp((0.9 * width) / (2 * level.width), 20, 70),
+			),
 		rowGap = hexRadius * h * 2 * gap,
 		colGap = hexRadius * 1.5 * gap,
 		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
