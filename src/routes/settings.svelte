@@ -8,6 +8,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Settings - Webcells</title>
+</svelte:head>
+
 <main class="py-12 flex flex-col items-center" in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	<h1 class="text-[9rem] font-thin uppercase">Settings</h1>
 	<form on:submit|preventDefault class="my-auto max-w-prose">

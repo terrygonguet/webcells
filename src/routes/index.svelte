@@ -20,7 +20,7 @@
 		</div>
 
 		<div class="nav" style="--n-cols: 2">
-			<a class="btn" href="/editor" sveltekit:prefetch>Level editor</a>
+			<button class="btn" href="/editor" disabled>Level editor</button>
 			<a class="btn" href="/settings" sveltekit:prefetch>Settings</a>
 		</div>
 	</nav>

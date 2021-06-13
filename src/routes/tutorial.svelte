@@ -12,6 +12,10 @@
 	].map(parse)
 </script>
 
+<svelte:head>
+	<title>Tutorial - Webcells</title>
+</svelte:head>
+
 <main class="py-12 text-center" in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	<h1 class="text-[9rem] font-thin uppercase">Tutorial</h1>
 	<p>
