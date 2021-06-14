@@ -13,8 +13,8 @@
 	<nav class="contents">
 		<div class="my-auto nav" style="--n-cols: 2">
 			<a class="btn" href="/tutorial" sveltekit:prefetch>Tutorial</a>
-			<a class="btn" href="/custom" sveltekit:prefetch>Custom level</a>
 			<a class="btn" href="/reddit" sveltekit:prefetch>Reddit levels</a>
+			<a class="btn" href="/custom" sveltekit:prefetch>Custom level</a>
 			<button class="btn flex-col" href="/random" disabled
 				>Random level<span class="text-sm">Coming soon</span></button
 			>

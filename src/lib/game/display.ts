@@ -394,7 +394,7 @@ function getRenderCache({ width, height, level, hexRadius: defaultRadius }: Stat
 	const hexRadius =
 			defaultRadius ??
 			Math.min(
-				clamp((0.9 * height) / (2 * level.height), 20, 70),
+				clamp((0.8 * height) / (2 * level.height), 20, 70),
 				clamp((0.9 * width) / (2 * level.width), 20, 70),
 			),
 		rowGap = hexRadius * h * 2 * gap,

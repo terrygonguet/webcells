@@ -27,9 +27,8 @@ export function randomLevel(): Level {
 		height = randInt(10, 15),
 		colHints = get(showColumnHints),
 		level: Level = {
-			title: "Test",
-			author: "DrFill",
-			flavor: "This is a test\nover two lines",
+			title: "",
+			author: "The Machine",
 			width,
 			height,
 			hexes: Array(width)
