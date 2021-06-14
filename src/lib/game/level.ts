@@ -209,7 +209,7 @@ function parseHexcellsV1(string: string): Level {
 	return {
 		title,
 		author,
-		flavor: flavor1 + "\n" + flavor2,
+		flavor: (flavor1 + "\n" + flavor2).trim(),
 		width: hexes.length,
 		height: hexes[0].length,
 		hexes,
