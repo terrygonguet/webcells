@@ -85,18 +85,22 @@
 		@apply grid gap-6 w-auto text-right;
 	}
 	.indicator {
-		@apply px-6 py-3 bg-black bg-opacity-50 flex items-center gap-6;
+		@apply px-6 py-3 bg-black bg-opacity-50 flex justify-end items-center;
 	}
 	.look-like-hexcells .indicator {
 		background: #06a4eb;
 		box-shadow: -7px 7px 5px 0px rgba(0, 0, 0, 0.6);
-		@apply pr-3 pl-10 py-1 flex flex-col justify-end items-stretch gap-0;
+		@apply pr-3 pl-10 py-1 flex flex-col items-end;
 	}
 	.indicator-label {
 		@apply leading-none text-2xl;
 	}
 	.indicator-value {
-		@apply leading-none text-5xl font-bold;
+		width: 5rem;
+		@apply leading-none text-5xl font-bold text-center;
+	}
+	.look-like-hexcells .indicator-value {
+		@apply text-right;
 	}
 
 	#flavor {
