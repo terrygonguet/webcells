@@ -36,9 +36,17 @@ const get: RequestHandler = async function get(req) {
 	for (const { id, title, selftext_html } of listing) {
 		if (!title.toLowerCase().startsWith("[level]")) continue
 		const $ = cheerio.load(selftext_html ?? ""),
-			data = $("pre > code").text().trim()
+			data = $("pre > code").text()
 		if (!data) continue
-		puzzles.push({ id, title, data })
+		puzzles.push({
+			id,
+			title,
+			data: data
+				.split("\n")
+				.slice(0, 38)
+				.map(l => l.trim())
+				.join("\n"),
+		})
 	}
 
 	return {

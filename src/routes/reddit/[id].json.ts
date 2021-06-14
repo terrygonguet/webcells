@@ -33,11 +33,15 @@ const get: RequestHandler = async function get(req) {
 	if (!title.toLowerCase().startsWith("[level]") || !selftext_html)
 		return { status: 400, body: { error: true, message: "Not a level" } }
 	const $ = cheerio.load(selftext_html),
-		data = $("pre > code").text().trim()
+		data = $("pre > code").text()
 	if (!data) return { status: 400, body: { error: true, message: "Not a level" } }
 	const puzzle: Puzzle = {
 		title,
-		data,
+		data: data
+			.split("\n")
+			.slice(0, 38)
+			.map(l => l.trim())
+			.join("\n"),
 		id,
 	}
 
