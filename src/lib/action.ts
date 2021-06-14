@@ -1,4 +1,12 @@
-import { Level, render, screen2board, setup, interact, InteractionType } from "$lib/game"
+import {
+	Level,
+	render,
+	screen2board,
+	setup,
+	interact,
+	InteractionType,
+	InteractionResult,
+} from "$lib/game"
 
 type GameActionOptions = {
 	level: Level
@@ -19,6 +27,8 @@ export function game(
 		state.width = this.innerWidth
 		state.height = this.innerHeight
 		state.sizeChanged = true
+		const ce = new CustomEvent("resize")
+		el.dispatchEvent(ce)
 	}
 
 	function onPointerMove(e: PointerEvent) {
@@ -32,13 +42,18 @@ export function game(
 		state.cursor[0] = Math.round(e.offsetX)
 		state.cursor[1] = Math.round(e.offsetY)
 		const boardPos = screen2board(state.cursor, state)
-		if (boardPos)
-			interact(
+		if (boardPos) {
+			const result = interact(
 				boardPos[0],
 				boardPos[1],
 				e.button == 2 ? InteractionType.Two : InteractionType.One,
 				level,
 			)
+			if (result != InteractionResult.Nothing) {
+				const ce = new CustomEvent(result == InteractionResult.Correct ? "correct" : "incorrect")
+				el.dispatchEvent(ce)
+			}
+		}
 	}
 
 	let old = performance.now()

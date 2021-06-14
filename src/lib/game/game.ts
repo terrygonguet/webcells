@@ -55,26 +55,36 @@ export enum InteractionType {
 	Two = "2",
 }
 
+export enum InteractionResult {
+	Nothing,
+	Correct,
+	Incorrect,
+}
+
 export function interact(x: number, y: number, type: InteractionType, level: Level) {
 	const hex = level.hexes[x]?.[y]
-	if (!hex) return
+	if (!hex) return InteractionResult.Nothing
 
 	if (hex.type == HexType.ColumnHint || !hex.hidden) {
 		switch (type) {
 			case InteractionType.One:
 				hex.hint = hex.hint == HintLevel.Shown ? HintLevel.None : HintLevel.Shown
+				return InteractionResult.Nothing
 				break
 			case InteractionType.Two:
 				hex.hint = HintLevel.Hidden
+				return InteractionResult.Nothing
 				break
 		}
 	} else if (hex.type == HexType.Empty) {
 		switch (type) {
-			// case InteractionType.One:
-			// 	break
+			case InteractionType.One:
+				return InteractionResult.Incorrect
+				break
 			case InteractionType.Two:
 				hex.hidden = false
 				hideNeighboursHints(hex, level)
+				return InteractionResult.Correct
 				break
 		}
 	} else if (hex.type == HexType.Full) {
@@ -82,11 +92,13 @@ export function interact(x: number, y: number, type: InteractionType, level: Lev
 			case InteractionType.One:
 				hex.hidden = false
 				hideNeighboursHints(hex, level)
+				return InteractionResult.Correct
 				break
-			// case InteractionType.Two:
-			// 	break
+			case InteractionType.Two:
+				return InteractionResult.Incorrect
+				break
 		}
-	}
+	} else return InteractionResult.Nothing
 }
 
 function hideNeighboursHints(hex: Hex, level: Level) {
@@ -118,6 +130,12 @@ export function isColumnHintOrUncovered(hex: Hex | null) {
 
 export function isInterractable(hex: Hex) {
 	return hex.type == HexType.ColumnHint || hex.hidden || hex.precision != Precision.None
+}
+
+export function countRemainingFullHexes(level: Level) {
+	return level.hexes
+		.flat()
+		.reduce((acc, cur) => acc + (cur?.type == HexType.Full && cur.hidden ? 1 : 0), 0)
 }
 
 export function immediateNeighbours(x: number, y: number, level: Level) {
