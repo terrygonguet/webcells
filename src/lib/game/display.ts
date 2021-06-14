@@ -2,7 +2,16 @@ import { lookLikeHexcells } from "$lib/stores"
 import { clamp } from "$lib/utils"
 import { cubicOut } from "svelte/easing"
 import { get } from "svelte/store"
-import type { Hex, Position, ColumnHint, FullHex, EmptyHex } from "./game"
+import {
+	Hex,
+	Position,
+	ColumnHint,
+	FullHex,
+	EmptyHex,
+	interact,
+	InteractionType,
+	InteractionResult,
+} from "./game"
 import {
 	distantNeighbours,
 	immediateNeighbours,
@@ -40,6 +49,7 @@ type RenderCache = {
 type DisplayProps = {
 	scale: number
 	hintOpacity: number
+	wrong: number
 }
 
 type SetupOptions = {
@@ -108,6 +118,8 @@ export function render(delta: number, state: State) {
 				opacityDir = hex.hint == HintLevel.Shown ? 1 : -1
 			dp.scale = clamp(dp.scale + scaleDir * animationSpeed, 0, 1)
 			dp.hintOpacity = clamp(dp.hintOpacity + opacityDir * animationSpeed, 0, 1)
+			if (dp.wrong >= 1) dp.wrong = 0
+			if (dp.wrong > 0) dp.wrong = clamp(dp.wrong + animationSpeed, 0, 1)
 		}
 		if (hex == focusedHex) continue
 		drawHex(hex, dp)
@@ -197,7 +209,10 @@ export function render(delta: number, state: State) {
 
 	function drawHex(hex: Hex, dp: DisplayProps | null) {
 		ctx.save()
-		ctx.translate(hex.x * colGap, (hex.y + (hex.x % 2) * 0.5) * rowGap)
+		ctx.translate(
+			hex.x * colGap + Math.sin((dp?.wrong ?? 0) * TAU * 5) * 0.1 * hexRadius,
+			(hex.y + (hex.x % 2) * 0.5) * rowGap,
+		)
 
 		if (hex.type == HexType.ColumnHint) {
 			drawColLabel(hex, inColumn(hex.x, hex.y, hex.angle, level), dp)
@@ -404,7 +419,7 @@ function getRenderCache({ width, height, level, hexRadius: defaultRadius }: Stat
 		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
 		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
 		displayProps: DisplayProps[][] = level.hexes.map(col =>
-			col.map(_ => ({ scale: 0, hintOpacity: 0 })),
+			col.map(_ => ({ scale: 0, hintOpacity: 0, wrong: 0 })),
 		),
 		hexes: [Hex, DisplayProps | null][] = (level.hexes.flat().filter(Boolean) as Hex[]).map(h => [
 			h,
@@ -421,6 +436,26 @@ function getRenderCache({ width, height, level, hexRadius: defaultRadius }: Stat
 		hexes,
 		lookLikeHexcells: get(lookLikeHexcells),
 	}
+}
+
+export function click(state: State, e: MouseEvent) {
+	const { level, cursor, cache } = state,
+		boardPos = screen2board(cursor, state, cache)
+	if (!boardPos) return
+	const result = interact(
+		boardPos[0],
+		boardPos[1],
+		e.button == 2 ? InteractionType.Two : InteractionType.One,
+		level,
+	)
+	if (!cache) return result
+	switch (result) {
+		case InteractionResult.Incorrect:
+			const dp = cache.displayProps[boardPos[0]][boardPos[1]]
+			if (dp) dp.wrong = Number.MIN_VALUE
+			break
+	}
+	return result
 }
 
 export function screen2board(

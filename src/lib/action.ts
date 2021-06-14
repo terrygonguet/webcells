@@ -6,6 +6,7 @@ import {
 	interact,
 	InteractionType,
 	InteractionResult,
+	click,
 } from "$lib/game"
 
 type GameActionOptions = {
@@ -27,8 +28,7 @@ export function game(
 		state.width = this.innerWidth
 		state.height = this.innerHeight
 		state.sizeChanged = true
-		const ce = new CustomEvent("resize")
-		el.dispatchEvent(ce)
+		el.dispatchEvent(new CustomEvent("resize"))
 	}
 
 	function onPointerMove(e: PointerEvent) {
@@ -41,18 +41,14 @@ export function game(
 		e.preventDefault()
 		state.cursor[0] = Math.round(e.offsetX)
 		state.cursor[1] = Math.round(e.offsetY)
-		const boardPos = screen2board(state.cursor, state)
-		if (boardPos) {
-			const result = interact(
-				boardPos[0],
-				boardPos[1],
-				e.button == 2 ? InteractionType.Two : InteractionType.One,
-				level,
-			)
-			if (result != InteractionResult.Nothing) {
-				const ce = new CustomEvent(result == InteractionResult.Correct ? "correct" : "incorrect")
-				el.dispatchEvent(ce)
-			}
+		const result = click(state, e)
+		switch (result) {
+			case InteractionResult.Correct:
+				el.dispatchEvent(new CustomEvent("correct"))
+				break
+			case InteractionResult.Incorrect:
+				el.dispatchEvent(new CustomEvent("incorrect"))
+				break
 		}
 	}
 
