@@ -7,5 +7,14 @@ const defaultShowColumnHints = browser
 export const showColumnHints = writable<boolean>(defaultShowColumnHints)
 showColumnHints.subscribe(value => {
 	if (!browser) return
-	localStorage.setItem("showColumnHints", value + "")
+	localStorage.setItem("showColumnHints", JSON.stringify(value))
+})
+
+const defaultLookLikeHexcells = browser
+	? JSON.parse(localStorage.getItem("lookLikeHexcells") ?? "false")
+	: false
+export const lookLikeHexcells = writable<boolean>(defaultLookLikeHexcells)
+lookLikeHexcells.subscribe(value => {
+	if (!browser) return
+	localStorage.setItem("lookLikeHexcells", JSON.stringify(value))
 })

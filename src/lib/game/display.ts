@@ -1,5 +1,7 @@
+import { lookLikeHexcells } from "$lib/stores"
 import { clamp } from "$lib/utils"
 import { cubicOut } from "svelte/easing"
+import { get } from "svelte/store"
 import type { Hex, Position, ColumnHint, FullHex, EmptyHex } from "./game"
 import {
 	distantNeighbours,
@@ -32,6 +34,7 @@ type RenderCache = {
 	boardOffsetY: number
 	displayProps: (DisplayProps | null)[][]
 	hexes: [Hex, DisplayProps | null][]
+	lookLikeHexcells: boolean
 }
 
 type DisplayProps = {
@@ -77,8 +80,16 @@ export function render(delta: number, state: State) {
 		state.sizeChanged = false
 	}
 
-	const { colGap, rowGap, hexRadius, boardOffsetY, boardOffsetX, displayProps, hexes } =
-			state.cache as RenderCache,
+	const {
+			colGap,
+			rowGap,
+			hexRadius,
+			boardOffsetY,
+			boardOffsetX,
+			displayProps,
+			hexes,
+			lookLikeHexcells,
+		} = state.cache as RenderCache,
 		boardPos = screen2board(cursor, state, state.cache),
 		focusedHex = boardPos ? level.hexes[boardPos[0]]?.[boardPos[1]] : null,
 		focusedDP = boardPos ? displayProps[boardPos[0]]?.[boardPos[1]] : null,
@@ -118,15 +129,15 @@ export function render(delta: number, state: State) {
 	function drawBorder(hex: FullHex | EmptyHex, displayProps: DisplayProps | null) {
 		switch (true) {
 			case hex.hidden:
-				ctx.fillStyle = "#111"
+				ctx.fillStyle = lookLikeHexcells ? "#ffb129" : "#111"
 				ctx.strokeStyle = "white"
 				break
 			case hex.type == HexType.Empty:
-				ctx.fillStyle = "transparent"
+				ctx.fillStyle = lookLikeHexcells ? "#3e3e3e" : "transparent"
 				ctx.strokeStyle = "white"
 				break
 			case hex.type == HexType.Full:
-				ctx.fillStyle = "magenta"
+				ctx.fillStyle = lookLikeHexcells ? "#06a4eb" : "magenta"
 				ctx.strokeStyle = "white"
 				break
 		}
@@ -157,7 +168,7 @@ export function render(delta: number, state: State) {
 		displayProps: DisplayProps | null,
 	) {
 		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12,
-			label = computeLabel(neighbours, hex, level)
+			label = computeLabel(neighbours, hex, level, lookLikeHexcells)
 		ctx.scale(scale, scale)
 		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.2 + 0.8 * (displayProps?.hintOpacity ?? 1)
 		ctx.font = Math.floor(hexRadius) + "px 'Louis George Cafe'"
@@ -171,7 +182,7 @@ export function render(delta: number, state: State) {
 		displayProps: DisplayProps | null,
 	) {
 		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12,
-			label = computeLabel(neighbours, hex, level)
+			label = computeLabel(neighbours, hex, level, lookLikeHexcells)
 
 		ctx.save()
 		if (hex.hint == HintLevel.Hidden) ctx.globalAlpha = 0.2 + 0.8 * (displayProps?.hintOpacity ?? 1)
@@ -278,7 +289,7 @@ export function render(delta: number, state: State) {
 			ctx.lineTo(4 * gap * hexRadius, -2 * h * gap * hexRadius)
 			ctx.lineTo(3.5 * gap * hexRadius, -h * gap * hexRadius)
 			ctx.closePath()
-			ctx.strokeStyle = "magenta"
+			ctx.strokeStyle = lookLikeHexcells ? "#06a4eb" : "magenta"
 			ctx.lineWidth = 0.1 * hexRadius
 			ctx.fillStyle = "white"
 			ctx.globalAlpha = 0.3 * opacity
@@ -291,7 +302,12 @@ export function render(delta: number, state: State) {
 	}
 }
 
-function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): string {
+function computeLabel(
+	neighbours: (Hex | null)[],
+	hex: Hex,
+	level: Level,
+	lookLikeHexcells: boolean,
+): string {
 	const n = countFullHexes(neighbours)
 	let label = ""
 	switch (hex.type) {
@@ -314,8 +330,10 @@ function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): strin
 							}
 						} else started = false
 					}
-					if (l == n) return "[" + n + "]"
-					else return "-" + n + "-"
+					if (l == n) {
+						if (lookLikeHexcells) return "{" + n + "}"
+						else return "[" + n + "]"
+					} else return "-" + n + "-"
 			}
 			break
 		case HexType.Empty:
@@ -346,8 +364,10 @@ function computeLabel(neighbours: (Hex | null)[], hex: Hex, level: Level): strin
 							} else started = false
 						}
 						// l can be more than n if all 6 neighbours are full
-						if (l >= n) return "[" + n + "]"
-						else return "-" + n + "-"
+						if (l >= n) {
+							if (lookLikeHexcells) return "{" + n + "}"
+							else return "[" + n + "]"
+						} else return "-" + n + "-"
 					}
 					break
 			}
@@ -389,7 +409,16 @@ function getRenderCache({ width, height, level, hexRadius: defaultRadius }: Stat
 			displayProps[h?.x]?.[h?.y],
 		])
 
-	return { hexRadius, rowGap, colGap, boardOffsetX, boardOffsetY, displayProps, hexes }
+	return {
+		hexRadius,
+		rowGap,
+		colGap,
+		boardOffsetX,
+		boardOffsetY,
+		displayProps,
+		hexes,
+		lookLikeHexcells: get(lookLikeHexcells),
+	}
 }
 
 export function screen2board(

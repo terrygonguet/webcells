@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Game from "$lib/components/Game.svelte"
 	import { parse } from "$lib/game"
+	import { lookLikeHexcells } from "$lib/stores"
 	import { fadeOut, flyInDown } from "$lib/transition"
 	import { fly } from "svelte/transition"
 
@@ -10,6 +11,10 @@
 		"Webcells level v1:Example 3:T Gonguet::7:3:xxFx|pxxxxfx/p|nEpfxxxenEpxxenenfxxxfxxxxx",
 		"Webcells level v1:Example 3:T Gonguet::5:5:xxxxfxxxxxfxxxxxxxfxxxxxFnxxxxfxxxxxxxfxxxxxfxxxxx",
 	].map(parse)
+
+	$: emptyHexSrc = $lookLikeHexcells ? "/img/emptyhex-alt.png" : "/img/emptyhex.png"
+	$: fullHexSrc = $lookLikeHexcells ? "/img/fullhex-alt.png" : "/img/fullhex.png"
+	$: coveredHexSrc = $lookLikeHexcells ? "/img/coveredhex-alt.png" : "/img/coveredhex.png"
 </script>
 
 <svelte:head>
@@ -20,11 +25,11 @@
 	<h1 class="text-[9rem] font-thin uppercase">Tutorial</h1>
 	<p>
 		Hexes can be <em>empty</em>
-		<img src="/img/emptyhex.png" alt="An empty hex" class="inline h-6 m-1 mb-2" />,
+		<img src={emptyHexSrc} alt="An empty hex" class="inline h-6 m-1 mb-2" />,
 		<em>full</em>
-		<img src="/img/fullhex.png" alt="A full hex" class="inline h-6 m-1 mb-2" />
+		<img src={fullHexSrc} alt="A full hex" class="inline h-6 m-1 mb-2" />
 		or <em>covered</em>
-		<img src="/img/coveredhex.png" alt="A covered hex" class="inline h-6 m-1 mb-2" />. Empty hexes
+		<img src={coveredHexSrc} alt="A covered hex" class="inline h-6 m-1 mb-2" />. Empty hexes
 		indicate how many full hexes are next to them. Uncover hexes with left click (if you think it is
 		a full hex) or right click (for empty hexes). Try it out here:
 	</p>
@@ -35,10 +40,11 @@
 	</p>
 	<Game level={examples[1]} width={300} height={320} hexRadius={30} class="mx-auto" />
 	<p>
-		A hex's value surrounded by square brackets (like <code>[3]</code>) means that the surrounding
-		full hexes are contiguous. Similarly, a value surrounded by dashes (like <code>-2-</code>) means
-		that the full hexes are <em class="italic">not</em> contiguous, i.e. separated by at least one empty
-		hex. Columns follow this pattern as well.
+		A hex's value surrounded by {$lookLikeHexcells ? "curly" : "square"} brackets (like
+		<code>{$lookLikeHexcells ? "{3}" : "[3]"}</code>) means that the surrounding full hexes are
+		contiguous. Similarly, a value surrounded by dashes (like <code>-2-</code>) means that the full
+		hexes are <em class="italic">not</em> contiguous, i.e. separated by at least one empty hex. Columns
+		follow this pattern as well.
 	</p>
 	<Game level={examples[2]} width={550} height={320} hexRadius={30} class="mx-auto" />
 	<p class="mb-4">

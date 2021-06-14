@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { showColumnHints } from "$lib/stores"
+	import { showColumnHints, lookLikeHexcells } from "$lib/stores"
 	import { fadeOut, flyInDown } from "$lib/transition"
+	import type { Writable } from "svelte/store"
 	import { fly } from "svelte/transition"
 
-	const onChange: svelte.JSX.FormEventHandler<HTMLInputElement> = function (e) {
-		showColumnHints.set(!!e.currentTarget?.checked)
+	function onChange(store: Writable<boolean>) {
+		return function (e: Event & { currentTarget: HTMLInputElement }) {
+			store.set(!!e.currentTarget?.checked)
+		}
 	}
 </script>
 
@@ -14,14 +17,23 @@
 
 <main class="py-12 flex flex-col items-center" in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	<h1 class="text-[9rem] font-thin uppercase">Settings</h1>
-	<form on:submit|preventDefault class="my-auto max-w-prose">
-		<label class="my-4 text-xl cursor-pointer">
+	<form on:submit|preventDefault class="my-auto max-w-prose grid gap-4 text-center">
+		<label class="text-xl cursor-pointer">
 			Automatically show column hint
 			<input
 				type="checkbox"
 				class="ml-2 cursor-pointer"
 				checked={$showColumnHints}
-				on:change={onChange}
+				on:change={onChange(showColumnHints)}
+			/>
+		</label>
+		<label class="text-xl cursor-pointer">
+			Look like Hexcells
+			<input
+				type="checkbox"
+				class="ml-2 cursor-pointer"
+				checked={$lookLikeHexcells}
+				on:change={onChange(lookLikeHexcells)}
 			/>
 		</label>
 	</form>
