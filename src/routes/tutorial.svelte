@@ -5,10 +5,10 @@
 	import { fly } from "svelte/transition"
 
 	const examples = [
-		"WebcellsV1:Example 1:T Gonguet::6:3:xxfxxxxxxxEnxxEnxxxxxxenfxfxfxxxxxfx",
-		"WebcellsV1:Example 2:T Gonguet::4:3:|nen|n/nfxenenxxenenfxxx",
-		"WebcellsV1:Example 3:T Gonguet::7:3:xxFx|pxxxxfx/p|nEpfxxxenEpxxenenfxxxfxxxxx",
-		"WebcellsV1:Example 3:T Gonguet::5:5:xxxxfxxxxxfxxxxxxxfxxxxxFnxxxxfxxxxxxxfxxxxxfxxxxx",
+		"Webcells level v1:Example 1:T Gonguet::6:3:xxfxxxxxxxEnxxEnxxxxxxenfxfxfxxxxxfx",
+		"Webcells level v1:Example 2:T Gonguet::4:3:|nen|n/nfxenenxxenenfxxx",
+		"Webcells level v1:Example 3:T Gonguet::7:3:xxFx|pxxxxfx/p|nEpfxxxenEpxxenenfxxxfxxxxx",
+		"Webcells level v1:Example 3:T Gonguet::5:5:xxxxfxxxxxfxxxxxxxfxxxxxFnxxxxfxxxxxxxfxxxxxfxxxxx",
 	].map(parse)
 </script>
 
