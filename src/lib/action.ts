@@ -42,11 +42,11 @@ export function game(
 		state.cursor[0] = Math.round(e.offsetX)
 		state.cursor[1] = Math.round(e.offsetY)
 		const result = click(state, e)
-		switch (result) {
-			case InteractionResult.Correct:
+		switch (result?.type) {
+			case "correct":
 				el.dispatchEvent(new CustomEvent("correct"))
 				break
-			case InteractionResult.Incorrect:
+			case "incorrect":
 				el.dispatchEvent(new CustomEvent("incorrect"))
 				break
 		}

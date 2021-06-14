@@ -50,6 +50,7 @@ type DisplayProps = {
 	scale: number
 	hintOpacity: number
 	wrong: number
+	flip: number
 }
 
 type SetupOptions = {
@@ -119,7 +120,9 @@ export function render(delta: number, state: State) {
 			dp.scale = clamp(dp.scale + scaleDir * animationSpeed, 0, 1)
 			dp.hintOpacity = clamp(dp.hintOpacity + opacityDir * animationSpeed, 0, 1)
 			if (dp.wrong >= 1) dp.wrong = 0
-			if (dp.wrong > 0) dp.wrong = clamp(dp.wrong + animationSpeed, 0, 1)
+			if (dp.wrong > 0) dp.wrong = Math.min(dp.wrong + animationSpeed, 1)
+			if (dp.flip >= 1) dp.flip = 0
+			if (dp.flip > 0) dp.flip = Math.min(dp.flip + animationSpeed, 1)
 		}
 		if (hex == focusedHex) continue
 		drawHex(hex, dp)
@@ -138,7 +141,7 @@ export function render(delta: number, state: State) {
 
 	ctx.restore()
 
-	function drawBorder(hex: FullHex | EmptyHex, displayProps: DisplayProps | null) {
+	function drawBorder(hex: FullHex | EmptyHex, dp: DisplayProps | null) {
 		switch (true) {
 			case hex.hidden:
 				ctx.fillStyle = lookLikeHexcells ? "#ffb129" : "#111"
@@ -153,9 +156,14 @@ export function render(delta: number, state: State) {
 				ctx.strokeStyle = "white"
 				break
 		}
+		const scale = 1 + cubicOut(dp?.scale ?? 0) * 0.12,
+			flip = dp?.flip ?? 0,
+			tm = ctx.getTransform()
+		tm.scaleSelf(scale)
+		tm.skewYSelf(Math.sin(flip * Math.PI))
+		tm.scaleSelf(Math.cos((flip ? 1 - flip : 0) * Math.PI), 1)
+		ctx.setTransform(tm)
 
-		const scale = 1 + cubicOut(displayProps?.scale ?? 0) * 0.12
-		if (scale != 1) ctx.scale(scale, scale)
 		ctx.beginPath()
 		ctx.moveTo(hexRadius, 0)
 		ctx.lineTo(0.5 * hexRadius, -h * hexRadius)
@@ -419,7 +427,7 @@ function getRenderCache({ width, height, level, hexRadius: defaultRadius }: Stat
 		boardOffsetX = (-level.width / 2 + 0.5) * colGap,
 		boardOffsetY = (-level.height / 2 + 0.2) * rowGap,
 		displayProps: DisplayProps[][] = level.hexes.map(col =>
-			col.map(_ => ({ scale: 0, hintOpacity: 0, wrong: 0 })),
+			col.map(_ => ({ scale: 0, hintOpacity: 0, wrong: 0, flip: 0 })),
 		),
 		hexes: [Hex, DisplayProps | null][] = (level.hexes.flat().filter(Boolean) as Hex[]).map(h => [
 			h,
@@ -449,10 +457,19 @@ export function click(state: State, e: MouseEvent) {
 		level,
 	)
 	if (!cache) return result
-	switch (result) {
-		case InteractionResult.Incorrect:
-			const dp = cache.displayProps[boardPos[0]][boardPos[1]]
-			if (dp) dp.wrong = Number.MIN_VALUE
+	const dp = cache.displayProps[boardPos[0]][boardPos[1]]
+	if (!dp) return result
+	switch (result.type) {
+		case "incorrect":
+			dp.wrong = Number.MIN_VALUE
+			result.apply()
+			break
+		case "correct":
+			dp.flip = Number.MIN_VALUE
+			setTimeout(() => result.apply(), 100)
+			break
+		default:
+			result.apply()
 			break
 	}
 	return result

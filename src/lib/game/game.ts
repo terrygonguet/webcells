@@ -55,52 +55,80 @@ export enum InteractionType {
 	Two = "2",
 }
 
-export enum InteractionResult {
-	Nothing,
-	Correct,
-	Incorrect,
+export type InteractionResult = {
+	type: "nothing" | "correct" | "incorrect"
+	apply(): void
 }
 
-export function interact(x: number, y: number, type: InteractionType, level: Level) {
+export function interact(
+	x: number,
+	y: number,
+	type: InteractionType,
+	level: Level,
+): InteractionResult {
 	const hex = level.hexes[x]?.[y]
-	if (!hex) return InteractionResult.Nothing
+	if (!hex) return { type: "nothing", apply() {} }
 
 	if (hex.type == HexType.ColumnHint || !hex.hidden) {
 		switch (type) {
 			case InteractionType.One:
-				hex.hint = hex.hint == HintLevel.Shown ? HintLevel.None : HintLevel.Shown
-				return InteractionResult.Nothing
+				return {
+					type: "nothing",
+					apply() {
+						hex.hint = hex.hint == HintLevel.Shown ? HintLevel.None : HintLevel.Shown
+					},
+				}
 				break
 			case InteractionType.Two:
-				hex.hint = HintLevel.Hidden
-				return InteractionResult.Nothing
+				return {
+					type: "nothing",
+					apply() {
+						hex.hint = HintLevel.Hidden
+					},
+				}
 				break
 		}
 	} else if (hex.type == HexType.Empty) {
 		switch (type) {
 			case InteractionType.One:
-				level.mistakes++
-				return InteractionResult.Incorrect
+				return {
+					type: "incorrect",
+					apply() {
+						level.mistakes++
+					},
+				}
 				break
 			case InteractionType.Two:
-				hex.hidden = false
-				hideNeighboursHints(hex, level)
-				return InteractionResult.Correct
+				return {
+					type: "correct",
+					apply() {
+						hex.hidden = false
+						hideNeighboursHints(hex, level)
+					},
+				}
 				break
 		}
 	} else if (hex.type == HexType.Full) {
 		switch (type) {
 			case InteractionType.One:
-				hex.hidden = false
-				hideNeighboursHints(hex, level)
-				return InteractionResult.Correct
+				return {
+					type: "correct",
+					apply() {
+						hex.hidden = false
+						hideNeighboursHints(hex, level)
+					},
+				}
 				break
 			case InteractionType.Two:
-				level.mistakes++
-				return InteractionResult.Incorrect
+				return {
+					type: "incorrect",
+					apply() {
+						level.mistakes++
+					},
+				}
 				break
 		}
-	} else return InteractionResult.Nothing
+	} else return { type: "nothing", apply() {} }
 }
 
 function hideNeighboursHints(hex: Hex, level: Level) {
