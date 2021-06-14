@@ -12,6 +12,10 @@ export function pickEl<T>(arr: T[]) {
 	return arr[randInt(0, arr.length)]
 }
 
+export function last<T>(arr: T[]) {
+	return arr[arr.length - 1]
+}
+
 export function modWrap(a: number, b: number) {
 	return (a + Math.ceil(-a / b) * b) % b
 }
