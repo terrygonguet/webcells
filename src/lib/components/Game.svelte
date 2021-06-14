@@ -7,6 +7,7 @@
 
 	let classes = "",
 		remaining = 0,
+		mistakes = 0,
 		canvasEl: HTMLCanvasElement
 
 	export let level = randomLevel()
@@ -22,15 +23,18 @@
 	$: title = level.title
 	$: flavor = level.flavor
 
-	function updateCount() {
+	function updateLabels() {
 		remaining = countRemainingFullHexes(level)
+		mistakes = level.mistakes
 	}
 
 	onMount(() => {
-		updateCount()
-		canvasEl.addEventListener("correct", updateCount)
+		updateLabels()
+		canvasEl.addEventListener("correct", updateLabels)
+		canvasEl.addEventListener("incorrect", updateLabels)
 		return () => {
-			canvasEl.removeEventListener("correct", updateCount)
+			canvasEl.removeEventListener("correct", updateLabels)
+			canvasEl.removeEventListener("incorrect", updateLabels)
 		}
 	})
 </script>
@@ -38,10 +42,11 @@
 <div id="wrapper" {style}>
 	{#if showUI}
 		<h1 class="absolute top-6 w-full text-center text-5xl font-thin z-10">{title}</h1>
-		<p
-			class="absolute top-1/2 right-6 transform -translate-y-1/2 p-4 bg-black bg-opacity-50 text-3xl font-thin z-10"
-		>
+		<p class="absolute top-6 right-6 p-4 bg-black bg-opacity-50 text-3xl font-thin z-10">
 			Remaining: {remaining}
+		</p>
+		<p class="absolute top-6 left-6 p-4 bg-black bg-opacity-50 text-3xl font-thin z-10">
+			Mistakes: {mistakes}
 		</p>
 		{#if flavor}
 			<p id="flavor">{flavor}</p>

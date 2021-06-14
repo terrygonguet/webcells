@@ -79,6 +79,7 @@ export function interact(x: number, y: number, type: InteractionType, level: Lev
 	} else if (hex.type == HexType.Empty) {
 		switch (type) {
 			case InteractionType.One:
+				level.mistakes++
 				return InteractionResult.Incorrect
 				break
 			case InteractionType.Two:
@@ -95,6 +96,7 @@ export function interact(x: number, y: number, type: InteractionType, level: Lev
 				return InteractionResult.Correct
 				break
 			case InteractionType.Two:
+				level.mistakes++
 				return InteractionResult.Incorrect
 				break
 		}

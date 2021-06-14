@@ -20,6 +20,7 @@ export type Level = {
 	width: number
 	height: number
 	hexes: (Hex | null)[][]
+	mistakes: number
 }
 
 export function randomLevel(): Level {
@@ -31,6 +32,7 @@ export function randomLevel(): Level {
 			author: "The Machine",
 			width,
 			height,
+			mistakes: 0,
 			hexes: Array(width)
 				.fill(0)
 				.map((_, x) =>
@@ -137,15 +139,6 @@ function parseHexcellsV1(string: string): Level {
 		}
 		lines.push(line)
 	}
-	// remove useless rows
-	while (rawLines[0] == "..................................................................")
-		rawLines.splice(0, 1)
-	while (last(rawLines) == "..................................................................")
-		rawLines.splice(-1, 1)
-	if (rawLines.length == 0) throw new Error("Empty level")
-	// remove useless columns
-	while (lines.every(l => l.startsWith("...."))) lines = lines.map(l => l.slice(4))
-	while (lines.every(l => l.endsWith("...."))) lines = lines.map(l => l.slice(0, l.length - 4))
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i]
@@ -197,14 +190,30 @@ function parseHexcellsV1(string: string): Level {
 			hexes[x][y] = hex
 		}
 	}
+	// remove useless columns
+	while (hexes[0].every(c => !c)) hexes.splice(0, 1)
+	while (last(hexes).every(c => !c)) hexes.splice(-1, 1)
+	// remove useless rows
+	while (hexes.every(col => !col[0])) hexes.forEach(col => col.shift())
+	while (hexes.every(col => !last(col))) hexes.forEach(col => col.pop())
+	// remap x & y
+	for (let x = 0; x < hexes.length; x++) {
+		for (let y = 0; y < hexes.length; y++) {
+			const hex = hexes[x][y]
+			if (!hex) continue
+			hex.x = x
+			hex.y = y
+		}
+	}
 
 	return {
 		title,
 		author,
 		flavor: flavor1 + "\n" + flavor2,
-		width: Math.ceil(lines[0].length / 2),
-		height: lines.length,
+		width: hexes.length,
+		height: hexes[0].length,
 		hexes,
+		mistakes: 0,
 	}
 }
 
@@ -293,5 +302,6 @@ function parseWebcellsV1(string: string): Level {
 		width,
 		height,
 		hexes,
+		mistakes: 0,
 	}
 }
