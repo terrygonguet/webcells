@@ -353,7 +353,8 @@ function computeLabel(
 							...immediateNeighbours(hex.x, hex.y, level),
 						]
 						let started = false,
-							l = 0
+							l = 0,
+							max = 0
 						for (const neighbour of neighbours) {
 							if (neighbour && neighbour.type == HexType.Full) {
 								if (started) l++
@@ -362,9 +363,10 @@ function computeLabel(
 									started = true
 								}
 							} else started = false
+							max = Math.max(l, max)
 						}
 						// l can be more than n if all 6 neighbours are full
-						if (l >= n) {
+						if (max >= n) {
 							if (lookLikeHexcells) return "{" + n + "}"
 							else return "[" + n + "]"
 						} else return "-" + n + "-"
