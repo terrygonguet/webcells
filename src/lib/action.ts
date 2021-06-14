@@ -1,13 +1,4 @@
-import {
-	Level,
-	render,
-	screen2board,
-	setup,
-	interact,
-	InteractionType,
-	InteractionResult,
-	click,
-} from "$lib/game"
+import { Level, render, setup, click } from "$lib/game"
 
 type GameActionOptions = {
 	level: Level
@@ -41,15 +32,16 @@ export function game(
 		e.preventDefault()
 		state.cursor[0] = Math.round(e.offsetX)
 		state.cursor[1] = Math.round(e.offsetY)
-		const result = click(state, e)
-		switch (result?.type) {
-			case "correct":
-				el.dispatchEvent(new CustomEvent("correct"))
-				break
-			case "incorrect":
-				el.dispatchEvent(new CustomEvent("incorrect"))
-				break
-		}
+		click(state, e, r => {
+			switch (r.type) {
+				case "correct":
+					el.dispatchEvent(new CustomEvent("correct"))
+					break
+				case "incorrect":
+					el.dispatchEvent(new CustomEvent("incorrect"))
+					break
+			}
+		})
 	}
 
 	let old = performance.now()

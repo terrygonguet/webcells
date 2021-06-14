@@ -446,7 +446,11 @@ function getRenderCache({ width, height, level, hexRadius: defaultRadius }: Stat
 	}
 }
 
-export function click(state: State, e: MouseEvent) {
+export function click(
+	state: State,
+	e: MouseEvent,
+	cb: ((result: InteractionResult) => void) | undefined,
+) {
 	const { level, cursor, cache } = state,
 		boardPos = screen2board(cursor, state, cache)
 	if (!boardPos) return
@@ -456,20 +460,27 @@ export function click(state: State, e: MouseEvent) {
 		e.button == 2 ? InteractionType.Two : InteractionType.One,
 		level,
 	)
-	if (!cache) return result
-	const dp = cache.displayProps[boardPos[0]][boardPos[1]]
-	if (!dp) return result
+	const dp = cache?.displayProps[boardPos[0]][boardPos[1]]
+	if (!cache || !dp) {
+		result.apply()
+		return result
+	}
 	switch (result.type) {
 		case "incorrect":
 			dp.wrong = Number.MIN_VALUE
 			result.apply()
+			cb?.(result)
 			break
 		case "correct":
 			dp.flip = Number.MIN_VALUE
-			setTimeout(() => result.apply(), 100)
+			setTimeout(() => {
+				result.apply()
+				cb?.(result)
+			}, 100)
 			break
 		default:
 			result.apply()
+			cb?.(result)
 			break
 	}
 	return result
