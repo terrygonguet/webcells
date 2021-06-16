@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { showColumnHints, lookLikeHexcells, invertButtons } from "$lib/stores"
 	import { fadeOut, flyInDown } from "$lib/transition"
-	import type { Writable } from "svelte/store"
 	import { fly } from "svelte/transition"
 	import Toggle from "svelte-toggle"
 </script>
@@ -11,7 +10,7 @@
 </svelte:head>
 
 <main class="py-12 flex flex-col items-center" in:fly|local={flyInDown} out:fly|local={fadeOut}>
-	<h1 class="text-[9rem] font-thin uppercase">Settings</h1>
+	<h1 class="text-[5rem] lg:text-[9rem] font-thin uppercase">Settings</h1>
 	<form on:submit|preventDefault class="my-auto max-w-prose grid gap-6 text-center">
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label>
@@ -37,11 +36,6 @@
 <style lang="postcss">
 	label {
 		@apply text-xl cursor-pointer flex items-center justify-between font-thin gap-6;
-	}
-
-	/* ! HACK */
-	h1 {
-		font-size: 5rem;
 	}
 
 	@screen lg {

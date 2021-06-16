@@ -8,7 +8,7 @@
 </svelte:head>
 
 <main in:fade={fadeIn} out:fly={flyOutUp}>
-	<h1 class="text-[9rem] font-thin uppercase">Webcells</h1>
+	<h1 class="text-[5rem] lg:text-[9rem] font-thin uppercase">Webcells</h1>
 
 	<nav class="contents">
 		<div class="my-auto nav" style="--n-cols: 2">
@@ -35,11 +35,6 @@
 		@apply flex flex-col items-center py-12;
 	}
 
-	/* ! HACK */
-	h1 {
-		font-size: 5rem;
-	}
-
 	.nav {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -47,7 +42,7 @@
 	}
 
 	@screen lg {
-		/* ! HACK - text-[9rem] is broken rn */
+		/* HACK cause lg:text-[9rem] isn't overriding correctly  */
 		h1 {
 			font-size: 9rem;
 		}

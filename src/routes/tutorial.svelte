@@ -32,7 +32,7 @@
 </svelte:head>
 
 <main class="py-12 text-center" in:fly|local={flyInDown} out:fly|local={fadeOut}>
-	<h1 class="text-[9rem] font-thin uppercase">Tutorial</h1>
+	<h1 class="text-[5rem] lg:text-[9rem] font-thin uppercase">Tutorial</h1>
 	<p>
 		Hexes can be <em>{empty}</em>
 		<img src={emptyHexSrc} alt="A {empty} hex" class="inline h-6 m-1 mb-2" /> or
@@ -72,11 +72,6 @@
 </main>
 
 <style lang="postcss">
-	/* ! HACK */
-	h1 {
-		font-size: 5rem;
-	}
-
 	p {
 		@apply max-w-prose mx-auto text-lg;
 	}
