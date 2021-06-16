@@ -67,7 +67,7 @@
 	<Game level={examples[3]} width={330} height={330} hexRadius={30} class="mx-auto" />
 	<p>All puzzles can be solved without guessing.</p>
 	<div class="flex justify-center my-4">
-		<a href="/" class="btn">Back</a>
+		<a href="/" class="btn">Home</a>
 	</div>
 </main>
 

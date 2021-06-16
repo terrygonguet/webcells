@@ -76,7 +76,7 @@
 			</label>
 			<nav class="grid grid-cols-2 gap-10">
 				<input type="submit" value="Load" class="btn" />
-				<a class="btn" href="/" sveltekit:prefetch>Back</a>
+				<a class="btn" href="/" sveltekit:prefetch>Home</a>
 			</nav>
 		</form>
 	{:else}

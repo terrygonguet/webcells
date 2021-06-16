@@ -117,7 +117,7 @@
 			</tbody>
 		</table>
 	</div>
-	<a href="/" class="btn col-start-2">Back</a>
+	<a href="/" class="btn col-start-2">Home</a>
 </main>
 
 <style lang="postcss">

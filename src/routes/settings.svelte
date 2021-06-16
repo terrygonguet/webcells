@@ -30,7 +30,7 @@
 		</label>
 	</form>
 	<div class="flex justify-center my-4">
-		<a href="/" class="btn">Back</a>
+		<a href="/" class="btn">Home</a>
 	</div>
 </main>
 

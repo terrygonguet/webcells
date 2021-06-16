@@ -35,5 +35,5 @@
 	{#if level}
 		<Game class="w-full h-full col-start-1 row-start-1" {level} />
 	{/if}
-	<a href="/reddit" class="btn absolute top-0 left-0 m-6">Back</a>
+	<a href="/reddit" class="btn absolute top-0 left-0 m-6">Level list</a>
 </main>
