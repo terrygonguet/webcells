@@ -59,6 +59,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>User made levels - Webcells</title>
+</svelte:head>
+
 <main class:look-like-hexcells={$lookLikeHexcells} in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	<form on:submit|preventDefault>
 		<img

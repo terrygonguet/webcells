@@ -29,7 +29,12 @@
 	export let puzzle: Puzzle
 
 	$: level = browser ? parse(puzzle.data) : null
+	$: title = level?.title ?? "Untitled"
 </script>
+
+<svelte:head>
+	<title>{title} - User made level - Webcells</title>
+</svelte:head>
 
 <main class="grid overflow-hidden" in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	{#if level}

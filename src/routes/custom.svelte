@@ -19,7 +19,7 @@
 	$: level = map<string, Level>(text, parse)
 	$: isValidLevel = reduce(level, l => true, false)
 	$: levelName = isRight(level) ? level.item.title : "Paste a level!"
-	$: pageTitle = `Custom Puzzle - ${levelName} - WebCells`
+	$: pageTitle = `${levelName} - Custom Puzzle - WebCells`
 
 	function onSubmit() {
 		goto(`/custom?data=${tmpData}`)
