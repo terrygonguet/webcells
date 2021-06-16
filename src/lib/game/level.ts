@@ -112,8 +112,7 @@ function parseHexcellsV1(string: string): Level {
 			"\\": 5,
 			"/": 1,
 		},
-		colHints = get(showColumnHints),
-		emptyLine = "..".repeat(33)
+		colHints = get(showColumnHints)
 
 	let lines: string[] = [],
 		raw = rawLines
@@ -138,9 +137,6 @@ function parseHexcellsV1(string: string): Level {
 		}
 		layer2.push(line)
 	}
-	console.log(raw.join("\n"))
-	console.log(layer1.join("\n"))
-	console.log(layer2.join("\n"))
 	// superpose the 2 layers
 	for (let i = 0; i < layer1.length; i++) {
 		let line = "",
