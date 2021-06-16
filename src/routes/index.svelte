@@ -13,15 +13,17 @@
 	<nav class="contents">
 		<div class="my-auto nav" style="--n-cols: 2">
 			<a class="btn" href="/tutorial" sveltekit:prefetch>Tutorial</a>
-			<a class="btn" href="/reddit" sveltekit:prefetch>Reddit levels</a>
-			<a class="btn" href="/custom" sveltekit:prefetch>Custom level</a>
+			<a class="btn flex-col" href="/reddit" sveltekit:prefetch
+				>User made puzzles<span class="text-sm">From Reddit</span></a
+			>
+			<a class="btn" href="/custom" sveltekit:prefetch>Custom puzzle</a>
 			<button class="btn flex-col" href="/random" disabled
-				>Random level<span class="text-sm">Coming soon</span></button
+				>Random puzzle<span class="text-sm">Coming soon</span></button
 			>
 		</div>
 
 		<div class="nav" style="--n-cols: 3">
-			<button class="btn" href="/editor" disabled>Level editor</button>
+			<button class="btn" href="/editor" disabled>Puzzle editor</button>
 			<a class="btn" href="/settings" sveltekit:prefetch>Settings</a>
 			<a class="btn" href="/about" sveltekit:prefetch>About</a>
 		</div>
