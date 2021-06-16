@@ -1,4 +1,4 @@
-import { lookLikeHexcells } from "$lib/stores"
+import { invertButtons, lookLikeHexcells } from "$lib/stores"
 import { clamp } from "$lib/utils"
 import { cubicOut } from "svelte/easing"
 import { get } from "svelte/store"
@@ -452,14 +452,19 @@ export function click(
 	cb: ((result: InteractionResult) => void) | undefined,
 ) {
 	const { level, cursor, cache } = state,
-		boardPos = screen2board(cursor, state, cache)
-	if (!boardPos) return
-	const result = interact(
-		boardPos[0],
-		boardPos[1],
-		e.button == 2 ? InteractionType.Two : InteractionType.One,
-		level,
-	)
+		boardPos = screen2board(cursor, state, cache),
+		invert = get(invertButtons),
+		normalBtnMap: { [button: number]: InteractionType } = {
+			0: InteractionType.One,
+			2: InteractionType.Two,
+		},
+		invertedBtnMap: { [button: number]: InteractionType } = {
+			0: InteractionType.Two,
+			2: InteractionType.One,
+		},
+		btnMap = invert ? invertedBtnMap : normalBtnMap
+	if (!boardPos || !btnMap[e.button]) return
+	const result = interact(boardPos[0], boardPos[1], btnMap[e.button], level)
 	const dp = cache?.displayProps[boardPos[0]][boardPos[1]]
 	if (!cache || !dp) {
 		result.apply()

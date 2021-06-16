@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { showColumnHints, lookLikeHexcells } from "$lib/stores"
+	import { showColumnHints, lookLikeHexcells, invertButtons } from "$lib/stores"
 	import { fadeOut, flyInDown } from "$lib/transition"
 	import type { Writable } from "svelte/store"
 	import { fly } from "svelte/transition"
@@ -34,6 +34,15 @@
 				class="ml-2 cursor-pointer"
 				checked={$lookLikeHexcells}
 				on:change={onChange(lookLikeHexcells)}
+			/>
+		</label>
+		<label class="text-xl cursor-pointer">
+			Invert mouse buttons
+			<input
+				type="checkbox"
+				class="ml-2 cursor-pointer"
+				checked={$invertButtons}
+				on:change={onChange(invertButtons)}
 			/>
 		</label>
 	</form>

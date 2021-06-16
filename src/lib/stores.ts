@@ -18,3 +18,12 @@ lookLikeHexcells.subscribe(value => {
 	if (!browser) return
 	localStorage.setItem("lookLikeHexcells", JSON.stringify(value))
 })
+
+const defaultInvertButtons = browser
+	? JSON.parse(localStorage.getItem("invertButtons") ?? "false")
+	: false
+export const invertButtons = writable<boolean>(defaultInvertButtons)
+invertButtons.subscribe(value => {
+	if (!browser) return
+	localStorage.setItem("invertButtons", JSON.stringify(value))
+})
