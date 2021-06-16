@@ -17,6 +17,7 @@
 	import type { Puzzle } from "./levels.json"
 	import { page } from "$app/stores"
 	import { browser } from "$app/env"
+	import { lookLikeHexcells } from "$lib/stores"
 
 	type Entry = [string, string, string, string]
 
@@ -58,7 +59,7 @@
 	}
 </script>
 
-<main in:fly|local={flyInDown} out:fly|local={fadeOut}>
+<main class:look-like-hexcells={$lookLikeHexcells} in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	<form on:submit|preventDefault>
 		<img
 			class="h-8 self-center mr-1 transform"
@@ -69,12 +70,9 @@
 		<input
 			bind:value={searchTitle}
 			type="text"
-			class="text-black text-md border-2 border-pink-600 px-2 py-1 flex-1"
+			class="text-black text-md input-border px-2 py-1 flex-1"
 		/>
-		<select
-			bind:value={searchDifficulty}
-			class="text-black text-md border-2 border-pink-600 p-2 flex-1"
-		>
+		<select bind:value={searchDifficulty} class="text-black text-md input-border p-2 flex-1">
 			<option value="*" selected>all difficulties</option>
 			{#each difficulties as difficulty}
 				<option value={difficulty}>{difficulty}</option>
@@ -92,9 +90,7 @@
 			</thead>
 			<tbody>
 				{#each filteredEntries as [id, title, difficulty, user]}
-					<tr
-						class="w-full border-b border-white transition-colors hover:bg-black hover:bg-opacity-20"
-					>
+					<tr class="w-full border-b border-white">
 						<td>
 							<a href="/reddit/{id}" class="w-full px-2 md:px-4 py-2 flex">{title}</a>
 						</td>
@@ -121,17 +117,35 @@
 			</tbody>
 		</table>
 	</div>
+	<a href="/" class="btn col-start-2">Back</a>
 </main>
 
 <style lang="postcss">
 	main {
-		@apply grid text-lg h-screen;
+		@apply grid gap-3 text-lg h-screen py-2;
 		grid-template-columns: auto 1fr auto;
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto 1fr auto;
 	}
 
 	form {
-		@apply flex flex-col items-stretch col-start-2 w-full py-2 gap-2;
+		@apply flex flex-col items-stretch col-start-2 w-full gap-2;
+	}
+
+	.input-border {
+		@apply border-2 border-pink-600;
+	}
+	.look-like-hexcells .input-border {
+		@apply border-yellow-600;
+	}
+
+	tbody tr {
+		transition: background 150ms ease-in-out;
+	}
+	tbody tr:hover {
+		background: rgba(0, 0, 0, 0.2);
+	}
+	.look-like-hexcells tbody tr:hover {
+		background: rgba(255, 255, 255, 0.2);
 	}
 
 	@screen md {
