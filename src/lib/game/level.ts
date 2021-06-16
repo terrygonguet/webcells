@@ -1,5 +1,5 @@
 import { showColumnHints } from "$lib/stores"
-import { last, pickEl, randInt } from "$lib/utils"
+import { clamp, last, pickEl, randInt } from "$lib/utils"
 import { get } from "svelte/store"
 import {
 	ColumnHint,
@@ -100,9 +100,7 @@ export function parse(string: string): Level {
 
 function parseHexcellsV1(string: string): Level {
 	const [version, title, author, flavor1, flavor2, ...rawLines] = string.split("\n"),
-		hexes: (Hex | null)[][] = Array(33)
-			.fill(0)
-			.map(_ => []),
+		hexes: (Hex | null)[][] = [],
 		precisions: { [char: string]: Precision } = {
 			".": Precision.None,
 			"+": Precision.Number,
@@ -114,28 +112,46 @@ function parseHexcellsV1(string: string): Level {
 			"\\": 5,
 			"/": 1,
 		},
-		colHints = get(showColumnHints)
+		colHints = get(showColumnHints),
+		emptyLine = "..".repeat(33)
 
 	let lines: string[] = [],
-		layer1: string[] = [],
-		layer2: string[] = []
-	// consolidate lines
-	for (let i = 0; i < rawLines.length; i++) {
-		let line = ""
-		for (let j = 0; j < 33; j++) {
-			line += rawLines[i + (j % 2)]?.slice(j * 2, j * 2 + 2) ?? ".."
+		raw = rawLines
+	// extract the two indidual layers
+	let layer1: string[] = []
+	for (let i = 0; i < raw.length; i += 2) {
+		let line = "",
+			offset = 0
+		for (let j = 0; j < raw[i].length; j += 2) {
+			line += raw[i + offset]?.slice(j, j + 2) ?? ".."
+			offset = (offset + 1) % 2
 		}
-		;(i % 2 ? layer2 : layer1).push(line)
+		layer1.push(line)
 	}
+	let layer2: string[] = []
+	for (let i = 0; i < raw.length; i += 2) {
+		let line = "..",
+			offset = 0
+		for (let j = 2; j < raw[i].length; j += 2) {
+			line += raw[i + offset]?.slice(j, j + 2) ?? ".."
+			offset = (offset + 1) % 2
+		}
+		layer2.push(line)
+	}
+	console.log(raw.join("\n"))
+	console.log(layer1.join("\n"))
+	console.log(layer2.join("\n"))
 	// superpose the 2 layers
-	for (let i = 0; i < layer1.length - 1; i++) {
-		const l1 = layer1[i],
-			l2 = layer2[i]
-		let line = ""
+	for (let i = 0; i < layer1.length; i++) {
+		let line = "",
+			offset = 0
+		const l1 = layer1[i]
 		for (let j = 0; j < l1.length; j += 2) {
-			const pair1 = l1.slice(j, j + 2),
-				pair2 = l2.slice(j, j + 2)
+			const l2 = layer2[i + offset],
+				pair1 = l1?.slice(j, j + 2) ?? "..",
+				pair2 = l2?.slice(j, j + 2) ?? ".."
 			line += pair1 == ".." ? pair2 : pair1
+			offset = (offset + 1) % 2
 		}
 		lines.push(line)
 	}
@@ -187,15 +203,16 @@ function parseHexcellsV1(string: string): Level {
 				default:
 					throw new Error(`Unknown character "${char1}" at position ${x},${i}`)
 			}
+			if (!hexes[x]) hexes[x] = []
 			hexes[x][y] = hex
 		}
 	}
-	// remove useless columns
-	while (hexes[0].every(c => !c)) hexes.splice(0, 1)
-	while (last(hexes).every(c => !c)) hexes.splice(-1, 1)
 	// remove useless rows
-	while (hexes.every(col => !col[0])) hexes.forEach(col => col.shift())
-	while (hexes.every(col => !last(col))) hexes.forEach(col => col.pop())
+	while (hexes[0].every(c => !c) && hexes[1].every(c => !c)) hexes.splice(0, 2)
+	while (last(hexes).every(c => !c) && last(hexes, -2).every(c => !c)) hexes.splice(-2, 2)
+	// remove useless columns
+	while (hexes.every(col => !col[0] && !col[1])) hexes.forEach(col => col.splice(0, 2))
+	while (hexes.every(col => !last(col) && !last(col, -2))) hexes.forEach(col => col.splice(-2, 2))
 	// remap x & y
 	for (let x = 0; x < hexes.length; x++) {
 		for (let y = 0; y < hexes.length; y++) {

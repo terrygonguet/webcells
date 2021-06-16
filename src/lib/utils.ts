@@ -12,8 +12,8 @@ export function pickEl<T>(arr: T[]) {
 	return arr[randInt(0, arr.length)]
 }
 
-export function last<T>(arr: T[]) {
-	return arr[arr.length - 1]
+export function last<T>(arr: T[], n = -1) {
+	return arr[arr.length + n]
 }
 
 export function modWrap(a: number, b: number) {
