@@ -42,7 +42,7 @@
 
 <div id="wrapper" {style} class:look-like-hexcells={$lookLikeHexcells}>
 	{#if showUI}
-		<h1 class="absolute top-6 w-full text-center text-5xl font-thin z-10">{title}</h1>
+		<!-- <h1 class="absolute top-6 w-full text-center text-5xl font-thin z-10">{title}</h1> -->
 		<div id="indicators">
 			<p class="indicator">
 				<span class="indicator-label">Remaining</span>
@@ -79,7 +79,7 @@
 	}
 
 	#indicators {
-		@apply absolute top-0 right-0 w-full p-6 flex flex-row-reverse justify-between z-10;
+		@apply absolute top-0 right-0 w-full p-6 flex flex-row-reverse justify-between z-10 pointer-events-none;
 	}
 	.look-like-hexcells #indicators {
 		@apply grid gap-6 w-auto text-right;
