@@ -23,28 +23,38 @@ const {
 	})
 
 const get: RequestHandler = async function get(req) {
-	const { id } = req.params,
-		{ title, selftext_html, author }: Snoowrap.Submission = await (r as any)
-			.getSubmission(id)
-			.fetch()
-	if (!title.toLowerCase().startsWith("[level]") || !selftext_html)
-		return { status: 400, body: { error: true, message: "Not a level" } }
-	const $ = cheerio.load(selftext_html),
-		data = $("pre > code").text()
-	if (!data) return { status: 400, body: { error: true, message: "Not a level" } }
-	const puzzle: Puzzle = {
-		id,
-		title,
-		user: author.name,
-		data: data
-			.split("\n")
-			.slice(0, 38)
-			.map(l => l.trim())
-			.join("\n"),
-	}
+	try {
+		const { id } = req.params,
+			{ title, selftext_html, author }: Snoowrap.Submission = await (r as any)
+				.getSubmission(id)
+				.fetch()
+		if (!title.toLowerCase().startsWith("[level]") || !selftext_html)
+			return { status: 400, body: { error: true, message: "Not a level" } }
+		const $ = cheerio.load(selftext_html),
+			data = $("pre > code").text()
+		if (!data) return { status: 400, body: { error: true, message: "Not a level" } }
+		const puzzle: Puzzle = {
+			id,
+			title,
+			user: author.name,
+			data: data
+				.split("\n")
+				.slice(0, 38)
+				.map(l => l.trim())
+				.join("\n"),
+		}
 
-	return {
-		body: puzzle,
+		return {
+			body: puzzle,
+		}
+	} catch (error) {
+		return {
+			status: 404,
+			body: {
+				error: true,
+				message: "Not found",
+			},
+		}
 	}
 }
 

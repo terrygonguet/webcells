@@ -4,9 +4,15 @@
 	const load: Load = async function load({ fetch, page }) {
 		const { id } = page.params,
 			res = await fetch(`/reddit/${id}.json`),
-			puzzle = await res.json()
+			data = await res.json()
 
-		return { props: { puzzle } }
+		if (data.error)
+			return {
+				status: res.status,
+				error: data.message,
+			}
+
+		return { props: { puzzle: data } }
 	}
 
 	export { load }
