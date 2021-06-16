@@ -48,7 +48,7 @@
 				<span class="indicator-label">Remaining</span>
 				<span class="indicator-value">{remaining}</span>
 			</p>
-			<p class="indicator flex-row-reverse">
+			<p class="indicator">
 				<span class="indicator-label">Mistakes</span>
 				<span class="indicator-value">{mistakes}</span>
 			</p>
@@ -79,13 +79,13 @@
 	}
 
 	#indicators {
-		@apply absolute top-0 right-0 w-full p-6 flex flex-row-reverse justify-between z-10 pointer-events-none;
+		@apply absolute top-0 right-0 p-6 grid gap-6 z-10 pointer-events-none;
 	}
 	.look-like-hexcells #indicators {
-		@apply grid gap-6 w-auto text-right;
+		@apply text-right;
 	}
 	.indicator {
-		@apply px-6 py-3 bg-black bg-opacity-50 flex justify-end items-center;
+		@apply px-6 py-3 bg-black bg-opacity-50 flex flex-row-reverse justify-end items-center;
 	}
 	.look-like-hexcells .indicator {
 		background: #06a4eb;
