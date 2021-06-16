@@ -362,7 +362,7 @@ function computeLabel(
 		case HexType.Empty:
 			switch (hex.precision) {
 				case Precision.None:
-					return ""
+					return lookLikeHexcells ? "?" : ""
 					break
 				case Precision.Number:
 					return n.toString()
