@@ -1,12 +1,6 @@
 <script context="module" lang="ts">
 	import type { Load } from "@sveltejs/kit"
 
-	export type Puzzle = {
-		id: string
-		title: string
-		data: string
-	}
-
 	const load: Load = async function load({ fetch }) {
 		const res = await fetch("/reddit/levels.json"),
 			puzzles = await res.json()
@@ -20,10 +14,11 @@
 <script lang="ts">
 	import { fadeOut, flyInDown } from "$lib/transition"
 	import { fly } from "svelte/transition"
+	import type { Puzzle } from "./levels.json"
 
 	export let puzzles: Puzzle[]
 
-	$: entries = puzzles.map(({ title, id }) => [id, ...parseTitle(title)])
+	$: entries = puzzles.map(({ title, id, user }) => [id, ...parseTitle(title), user])
 
 	function parseTitle(title: string) {
 		const result = /^\[.+?\](.+?)(?:[([](.+?)[\])])?$/.exec(title)
@@ -43,10 +38,11 @@
 			<tr>
 				<th class="px-4 py-2 border-b border-white text-left">Title</th>
 				<th class="px-4 py-2 border-b border-white">Difficulty</th>
+				<th class="px-4 py-2 border-b border-white">Submitted by</th>
 			</tr>
 		</thead>
 		<tbody>
-			{#each entries as [id, title, difficulty]}
+			{#each entries as [id, title, difficulty, user]}
 				<tr class="border-b border-white transition-transform transform hover:scale-110">
 					<td>
 						<a href="/reddit/{id}" class="w-full px-4 py-2 flex my-1">{title}</a>
@@ -54,6 +50,9 @@
 					<td>
 						<a href="/reddit/{id}" class="w-full px-4 py-2 flex justify-center my-1">{difficulty}</a
 						>
+					</td>
+					<td>
+						<a href="/reddit/{id}" class="w-full px-4 py-2 flex justify-center my-1">{user}</a>
 					</td>
 				</tr>
 			{:else}

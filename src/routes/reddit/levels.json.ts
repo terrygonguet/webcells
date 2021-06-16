@@ -20,10 +20,11 @@ const {
 		password: REDDIT_PASSWORD,
 	})
 
-type Puzzle = {
+export type Puzzle = {
 	id: string
 	title: string
 	data: string
+	user: string
 }
 
 const get: RequestHandler = async function get(req) {
@@ -33,7 +34,7 @@ const get: RequestHandler = async function get(req) {
 	while (!listing.isFinished) {
 		listing = await listing.fetchMore({ amount: 100, append: true })
 	}
-	for (const { id, title, selftext_html } of listing) {
+	for (const { id, title, selftext_html, author } of listing) {
 		if (!title.toLowerCase().startsWith("[level]")) continue
 		const $ = cheerio.load(selftext_html ?? ""),
 			data = $("pre > code").text()
@@ -41,6 +42,7 @@ const get: RequestHandler = async function get(req) {
 		puzzles.push({
 			id,
 			title,
+			user: author.name,
 			data: data
 				.split("\n")
 				.slice(0, 38)

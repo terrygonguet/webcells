@@ -3,6 +3,7 @@ import snoowrap from "snoowrap"
 import { config } from "dotenv"
 import cheerio from "cheerio"
 import type Snoowrap from "snoowrap"
+import type { Puzzle } from "./levels.json"
 
 config()
 
@@ -21,28 +22,25 @@ const {
 		password: REDDIT_PASSWORD,
 	})
 
-type Puzzle = {
-	id: string
-	title: string
-	data: string
-}
-
 const get: RequestHandler = async function get(req) {
 	const { id } = req.params,
-		{ title, selftext_html }: Snoowrap.Submission = await (r as any).getSubmission(id).fetch()
+		{ title, selftext_html, author }: Snoowrap.Submission = await (r as any)
+			.getSubmission(id)
+			.fetch()
 	if (!title.toLowerCase().startsWith("[level]") || !selftext_html)
 		return { status: 400, body: { error: true, message: "Not a level" } }
 	const $ = cheerio.load(selftext_html),
 		data = $("pre > code").text()
 	if (!data) return { status: 400, body: { error: true, message: "Not a level" } }
 	const puzzle: Puzzle = {
+		id,
 		title,
+		user: author.name,
 		data: data
 			.split("\n")
 			.slice(0, 38)
 			.map(l => l.trim())
 			.join("\n"),
-		id,
 	}
 
 	return {

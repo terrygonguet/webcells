@@ -14,11 +14,11 @@
 
 <script lang="ts">
 	import { parse } from "$lib/game"
-	import type { Puzzle } from "./index.svelte"
 	import { fly } from "svelte/transition"
 	import { fadeOut, flyInDown } from "$lib/transition"
 	import Game from "$lib/components/Game.svelte"
 	import { browser } from "$app/env"
+	import type { Puzzle } from "./levels.json"
 
 	export let puzzle: Puzzle
 
