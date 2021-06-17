@@ -247,3 +247,40 @@ export function inColumn(x: number, y: number, angle: ColumnHint["angle"], level
 
 	return hexes
 }
+
+export function serialize(level: Level) {
+	const precisions: { [char: number]: string } = {
+			[Precision.None]: "x",
+			[Precision.Number]: "n",
+			[Precision.Precise]: "p",
+		},
+		angles: { [char: number]: string } = {
+			0: "|",
+			5: "\\",
+			1: "/",
+		},
+		{ title, author, flavor, width, height, mistakes } = level,
+		hexes: (Hex | null)[] = []
+
+	for (let x = 0; x < width; x++) {
+		for (let y = 0; y < height; y++) {
+			hexes[y * width + x] = level.hexes[x][y]
+		}
+	}
+
+	const lvlData = hexes
+		.map(h => {
+			if (!h) return "xx"
+			switch (h.type) {
+				case HexType.ColumnHint:
+					return (angles[h.angle] ?? "|") + (precisions[h.precision] ?? "n")
+				case HexType.Empty:
+					return (h.hidden ? "e" : "E") + (precisions[h.precision] ?? "x")
+				case HexType.Full:
+					return (h.hidden ? "f" : "F") + (precisions[h.precision] ?? "x")
+			}
+		})
+		.join("")
+
+	return `Webcells save v1:${mistakes}:${title}:${author}:${flavor}:${width}:${height}:${lvlData}`
+}
