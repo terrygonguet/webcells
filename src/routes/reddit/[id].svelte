@@ -19,7 +19,7 @@
 </script>
 
 <script lang="ts">
-	import { parse } from "$lib/game"
+	import { parse, serialize } from "$lib/game"
 	import { fly } from "svelte/transition"
 	import { fadeOut, flyInDown } from "$lib/transition"
 	import Game from "$lib/components/Game.svelte"
@@ -28,13 +28,24 @@
 
 	export let puzzle: Puzzle
 
-	$: level = browser ? parse(puzzle.data) : null
+	$: level = load()
 	$: title = level?.title ?? "Untitled"
+
+	function save() {
+		if (level) localStorage.setItem("saved-" + puzzle.id, serialize(level))
+	}
+
+	function load() {
+		if (browser) return parse(localStorage.getItem("saved-" + puzzle.id) ?? puzzle.data)
+		else return null
+	}
 </script>
 
 <svelte:head>
 	<title>{title} - User made level - Webcells</title>
 </svelte:head>
+
+<svelte:window on:sveltekit:navigation-start={save} on:beforeunload={save} />
 
 <main class="grid overflow-hidden" in:fly|local={flyInDown} out:fly|local={fadeOut}>
 	{#if level}
