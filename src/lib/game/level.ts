@@ -94,6 +94,7 @@ export function randomLevel(): Level {
 
 export function parse(string: string): Level {
 	if (string.startsWith("Webcells level v1")) return parseWebcellsV1(string)
+	else if (string.startsWith("Webcells save v1")) return parseWebcellsSaveV1(string)
 	else if (string.startsWith("Hexcells level v1")) return parseHexcellsV1(string)
 	else throw new Error("Unsupported level format")
 }
@@ -308,7 +309,7 @@ function parseWebcellsV1(string: string): Level {
 		hexes[x][y] = hex
 	}
 
-	return {
+	const level = {
 		title,
 		author,
 		flavor,
@@ -317,4 +318,30 @@ function parseWebcellsV1(string: string): Level {
 		hexes,
 		mistakes: 0,
 	}
+
+	hexes.flat().forEach(h => {
+		if (!h) return
+		let toCheck
+		switch (h.type) {
+			case HexType.ColumnHint:
+				toCheck = inColumn(h.x, h.y, h.angle, level)
+				break
+			case HexType.Empty:
+				toCheck = immediateNeighbours(h.x, h.y, level)
+				break
+			case HexType.Full:
+				toCheck = distantNeighbours(h.x, h.y, level)
+				break
+		}
+		if (toCheck.every(isColumnHintOrUncovered)) h.hint = HintLevel.Hidden
+	})
+
+	return level
+}
+
+function parseWebcellsSaveV1(string: string) {
+	const [version, mistakesStr, ...rest] = string.split(":"),
+		level = parseWebcellsV1(`Webcells level v1:${rest.join(":")}`)
+	level.mistakes = parseInt(mistakesStr) || 0
+	return level
 }
