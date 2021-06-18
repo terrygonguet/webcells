@@ -21,7 +21,6 @@
 	$: widthStyle = width ? `--width:${width}px;` : ""
 	$: heightStyle = height ? `--height:${height}px;` : ""
 	$: style = widthStyle + heightStyle
-	$: title = level.title
 	$: flavor = level.flavor
 
 	function updateLabels() {

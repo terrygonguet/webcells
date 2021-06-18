@@ -26,7 +26,7 @@
 	import Game from "$lib/components/Game.svelte"
 	import { browser } from "$app/env"
 	import type { Puzzle } from "./levels.json"
-	import { tick } from "svelte"
+	import { onMount, tick } from "svelte"
 
 	type SavedData = {
 		stage: number
@@ -35,23 +35,35 @@
 
 	export let puzzle: Puzzle
 
-	const storageId = "saved-" + puzzle.id
-	const savedData = load()
-	let stage = savedData?.stage ?? 0
-	let level = parse(savedData?.level ?? puzzle.data[stage])
+	const storageId = "saved-" + puzzle.id,
+		savedData = load(),
+		fadeDuration = 300
+	let stage = savedData?.stage ?? 0,
+		level = parse(savedData?.level ?? puzzle.data[stage]),
+		fading = true
 
 	$: title = level?.title ?? "Untitled"
-	$: console.log(level)
 
 	async function next() {
 		if (++stage >= puzzle.data.length) console.log("done")
-		else level = parse(puzzle.data[stage])
+		else {
+			fading = true
+			setTimeout(() => {
+				level = parse(puzzle.data[stage])
+				fading = false
+			}, fadeDuration)
+		}
 	}
 
 	async function reset() {
+		if (!confirm("Are you sure?\nYour progress will be lost!")) return
 		localStorage.removeItem(storageId)
 		stage = 0
-		level = parse(puzzle.data[0])
+		fading = true
+		setTimeout(() => {
+			level = parse(puzzle.data[0])
+			fading = false
+		}, fadeDuration)
 	}
 
 	function save() {
@@ -63,6 +75,8 @@
 		if (browser) return JSON.parse(localStorage.getItem(storageId) as any)
 		else return null
 	}
+
+	onMount(() => (fading = false))
 </script>
 
 <svelte:head>
@@ -72,7 +86,13 @@
 <svelte:window on:sveltekit:navigation-start={save} on:beforeunload={save} />
 
 <main class="grid overflow-hidden" in:fly|local={flyInDown} out:fly|local={fadeOut}>
-	<Game class="w-full h-full col-start-1 row-start-1" {level} on:gameover={next} />
+	<Game
+		class="transition-opacity duration-300 {fading
+			? 'opacity-0'
+			: ''} w-full h-full col-start-1 row-start-1"
+		{level}
+		on:gameover={next}
+	/>
 	<nav class="absolute top-0 left-0 m-6">
 		<a href="/reddit" class="btn mb-6">Level list</a>
 		{#if puzzle.data.length > 1}

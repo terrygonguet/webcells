@@ -93,8 +93,6 @@ export function randomLevel(): Level {
 }
 
 export function parse(string: string): Level {
-	console.log(string)
-
 	if (string.startsWith("Webcells level v1")) return parseWebcellsV1(string)
 	else if (string.startsWith("Webcells save v1")) return parseWebcellsSaveV1(string)
 	else if (string.startsWith("Hexcells level v1")) return parseHexcellsV1(string)
