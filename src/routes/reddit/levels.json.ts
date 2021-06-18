@@ -2,6 +2,7 @@ import type { RequestHandler } from "@sveltejs/kit"
 import snoowrap from "snoowrap"
 import { config } from "dotenv"
 import cheerio from "cheerio"
+import { dev } from "$app/env"
 
 config()
 
@@ -20,6 +21,8 @@ const {
 		password: REDDIT_PASSWORD,
 	})
 
+let cache: Puzzle[] | undefined
+
 export type Puzzle = {
 	id: string
 	title: string
@@ -28,7 +31,9 @@ export type Puzzle = {
 }
 
 const get: RequestHandler = async function get(req) {
-	const puzzles: Puzzle[] = []
+	const puzzles: Puzzle[] = cache ?? []
+	if (puzzles.length > 0) return { body: puzzles }
+
 	let listing = await r.getSubreddit("hexcellslevels").getNew({ count: 100 })
 
 	while (!listing.isFinished) {
@@ -53,6 +58,8 @@ const get: RequestHandler = async function get(req) {
 			data,
 		})
 	}
+
+	if (dev) cache = puzzles
 
 	return {
 		body: puzzles,
