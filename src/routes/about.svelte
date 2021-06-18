@@ -37,11 +37,6 @@
 	}
 
 	@screen lg {
-		/* HACK cause lg:text-[9rem] isn't overriding correctly  */
-		h1 {
-			font-size: 9rem;
-		}
-
 		p {
 			@apply text-xl;
 		}

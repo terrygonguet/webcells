@@ -77,11 +77,6 @@
 	}
 
 	@screen lg {
-		/* ! HACK - text-[9rem] is broken rn */
-		h1 {
-			font-size: 9rem;
-		}
-
 		p {
 			@apply text-xl;
 		}

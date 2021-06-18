@@ -1,7 +1,7 @@
 @tailwind base;
 @tailwind components;
-@tailwind screens;
 @tailwind utilities;
+@tailwind screens;
 
 @layer base {
 	@font-face {

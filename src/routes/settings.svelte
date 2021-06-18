@@ -42,10 +42,5 @@
 		label {
 			@apply text-3xl;
 		}
-
-		/* ! HACK - text-[9rem] is broken rn */
-		h1 {
-			font-size: 9rem;
-		}
 	}
 </style>

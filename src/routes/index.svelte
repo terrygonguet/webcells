@@ -42,11 +42,6 @@
 	}
 
 	@screen lg {
-		/* HACK cause lg:text-[9rem] isn't overriding correctly  */
-		h1 {
-			font-size: 9rem;
-		}
-
 		.nav {
 			grid-template-columns: repeat(var(--n-cols, 3), 1fr);
 			grid-auto-rows: 1fr;
