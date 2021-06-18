@@ -102,7 +102,7 @@
 				<tr class="w-full">
 					<th class="px-2 md:px-4 py-2 border-b border-white text-left">Title</th>
 					<th class="px-2 md:px-4 py-2 border-b border-white">Difficulty</th>
-					<th class="px-2 md:px-4 py-2 border-b border-white"># of Levels</th>
+					<th class="px-2 md:px-4 py-2 border-b border-white">Type</th>
 					<th class="px-2 md:px-4 py-2 border-b border-white">Submitted by</th>
 				</tr>
 			</thead>
@@ -111,7 +111,9 @@
 					<a href="/reddit/{id}">
 						<td class="px-2 md:px-4 py-2">{title}</td>
 						<td class="px-2 md:px-4 py-2 text-center align-middle">{difficulty}</td>
-						<td class="px-2 md:px-4 py-2 text-center align-middle">{numPuzzles}</td>
+						<td class="px-2 md:px-4 py-2 text-center align-middle"
+							>{numPuzzles == 1 ? "Single level" : `${numPuzzles} level pack`}</td
+						>
 						<td class="px-2 md:px-4 py-2 text-center align-middle">
 							<a
 								href="https://www.reddit.com/r/hexcellslevels/comments/{id}"
@@ -146,7 +148,7 @@
 		@apply border-2 border-pink-600;
 	}
 	.look-like-hexcells .input-border {
-		@apply border-yellow-600;
+		@apply border-blue-500;
 	}
 
 	tbody > a {
