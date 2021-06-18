@@ -56,8 +56,7 @@
 		class="{classes} absolute top-0 left-0"
 		use:game={{ level, width, height, hexRadius }}
 		bind:this={canvasEl}
-		on:correct={updateLabels}
-		on:incorrect={updateLabels}
+		on:change={updateLabels}
 		on:correct
 		on:incorrect
 		on:gameover

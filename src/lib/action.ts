@@ -41,6 +41,7 @@ export function game(
 					el.dispatchEvent(new CustomEvent("incorrect"))
 					break
 			}
+			el.dispatchEvent(new CustomEvent("change"))
 			if (isFinished(state.level)) el.dispatchEvent(new CustomEvent("gameover"))
 		})
 	}
@@ -74,7 +75,7 @@ export function game(
 			width = newWidth
 			height = newHeight
 			hexRadius = newHexRadius
-			console.log("Updated")
+			el.dispatchEvent(new CustomEvent("change"))
 		},
 		destroy() {
 			cancelAnimationFrame(rafID)
