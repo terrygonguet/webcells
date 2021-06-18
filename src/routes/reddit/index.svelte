@@ -19,25 +19,33 @@
 	import { browser } from "$app/env"
 	import { lookLikeHexcells } from "$lib/stores"
 
-	type Entry = [string, string, string, string]
+	type Entry = [string, string, string, number, string]
 
 	export let puzzles: Puzzle[]
 
 	let searchTitle = $page.query.get("title") ?? "",
-		searchDifficulty = $page.query.get("difficulty") ?? "*"
+		searchDifficulty = $page.query.get("difficulty") ?? "*",
+		searchType = $page.query.get("type") ?? "*"
 
-	$: entries = puzzles.map<Entry>(({ title, id, user }) => [id, ...parseTitle(title), user])
+	$: entries = puzzles.map<Entry>(({ title, id, user, data }) => [
+		id,
+		...parseTitle(title),
+		data.length,
+		user,
+	])
 	$: difficulties = getUniqueDifficulties(entries)
 	$: filteredEntries = entries.filter(
-		([, title, difficulty]) =>
+		([, title, difficulty, numPuzzles]) =>
 			title.toLocaleLowerCase().includes(searchTitle.toLocaleLowerCase()) &&
-			(searchDifficulty == "*" || difficulty == searchDifficulty),
+			(searchDifficulty == "*" || difficulty == searchDifficulty) &&
+			(searchType == "*" || (searchType == "single" ? numPuzzles == 1 : numPuzzles > 1)),
 	)
-	$: browser && updateQuery(searchTitle, searchDifficulty)
+	$: browser && updateQuery(searchTitle, searchDifficulty, searchType)
 
-	function updateQuery(title: string, difficulty: string) {
+	function updateQuery(title: string, difficulty: string, type: string) {
 		title == "" ? $page.query.delete("title") : $page.query.set("title", title)
 		difficulty == "*" ? $page.query.delete("difficulty") : $page.query.set("difficulty", difficulty)
+		type == "*" ? $page.query.delete("type") : $page.query.set("type", type)
 		let queryString = $page.query.toString()
 		history.replaceState(null, "", "/reddit" + (queryString ? "?" + queryString : ""))
 	}
@@ -82,6 +90,11 @@
 				<option value={difficulty}>{difficulty}</option>
 			{/each}
 		</select>
+		<select bind:value={searchType} class="text-black text-md input-border p-2 flex-1">
+			<option value="*" selected>packs & single levels</option>
+			<option value="single" selected>single levels only</option>
+			<option value="packs" selected>packs only</option>
+		</select>
 	</form>
 	<div class="overflow-y-auto overflow-x-hidden col-start-2">
 		<table class="table-fixed w-full">
@@ -89,30 +102,24 @@
 				<tr class="w-full">
 					<th class="px-2 md:px-4 py-2 border-b border-white text-left">Title</th>
 					<th class="px-2 md:px-4 py-2 border-b border-white">Difficulty</th>
+					<th class="px-2 md:px-4 py-2 border-b border-white"># of Levels</th>
 					<th class="px-2 md:px-4 py-2 border-b border-white">Submitted by</th>
 				</tr>
 			</thead>
 			<tbody>
-				{#each filteredEntries as [id, title, difficulty, user]}
-					<tr class="w-full border-b border-white">
-						<td>
-							<a href="/reddit/{id}" class="w-full px-2 md:px-4 py-2 flex">{title}</a>
-						</td>
-						<td>
-							<a href="/reddit/{id}" class="w-full px-2 md:px-4 py-2 flex justify-center"
-								>{difficulty}</a
+				{#each filteredEntries as [id, title, difficulty, numPuzzles, user]}
+					<a href="/reddit/{id}">
+						<td class="px-2 md:px-4 py-2">{title}</td>
+						<td class="px-2 md:px-4 py-2 text-center align-middle">{difficulty}</td>
+						<td class="px-2 md:px-4 py-2 text-center align-middle">{numPuzzles}</td>
+						<td class="px-2 md:px-4 py-2 text-center align-middle">
+							<a
+								href="https://www.reddit.com/r/hexcellslevels/comments/{id}"
+								class="px-3 py-1 transition-all transform hover:scale-105 hover:bg-yellow-600 hover:bg-opacity-25 rounded-full"
+								target="_blank">{user}</a
 							>
 						</td>
-						<td>
-							<a href="/reddit/{id}" class="flex justify-center items-center py-1">
-								<a
-									href="https://www.reddit.com/r/hexcellslevels/comments/{id}"
-									class="px-3 py-1 transition-all transform hover:scale-105 hover:bg-yellow-600 hover:bg-opacity-25 rounded-full"
-									target="_blank">{user}</a
-								>
-							</a>
-						</td>
-					</tr>
+					</a>
 				{:else}
 					<tr>
 						<td colspan="3">No puzzles...</td>
@@ -142,13 +149,14 @@
 		@apply border-yellow-600;
 	}
 
-	tbody tr {
+	tbody > a {
 		transition: background 150ms ease-in-out;
+		@apply border-b border-white table-row;
 	}
-	tbody tr:hover {
+	tbody > a:hover {
 		background: rgba(0, 0, 0, 0.2);
 	}
-	.look-like-hexcells tbody tr:hover {
+	.look-like-hexcells tbody > a:hover {
 		background: rgba(255, 255, 255, 0.2);
 	}
 

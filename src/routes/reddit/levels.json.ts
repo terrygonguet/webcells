@@ -23,7 +23,7 @@ const {
 export type Puzzle = {
 	id: string
 	title: string
-	data: string
+	data: string[]
 	user: string
 }
 
@@ -35,25 +35,36 @@ const get: RequestHandler = async function get(req) {
 		listing = await listing.fetchMore({ amount: 100, append: true })
 	}
 	for (const { id, title, selftext_html, author } of listing) {
-		if (!title.toLowerCase().startsWith("[level]")) continue
+		if (
+			(!title.toLowerCase().startsWith("[level]") &&
+				!title.toLowerCase().startsWith("[level pack]")) ||
+			!selftext_html
+		)
+			continue
 		const $ = cheerio.load(selftext_html ?? ""),
-			data = $("pre > code").text()
-		if (!data) continue
+			data = $("pre > code")
+				.map((i, el) => cleanup($(el).text()))
+				.toArray()
+		if (!data || data.length == 0) continue
 		puzzles.push({
 			id,
 			title,
 			user: author.name,
-			data: data
-				.split("\n")
-				.slice(0, 38)
-				.map(l => l.trim())
-				.join("\n"),
+			data,
 		})
 	}
 
 	return {
 		body: puzzles,
 	}
+}
+
+function cleanup(data: string) {
+	return data
+		.split("\n")
+		.slice(0, 38)
+		.map(l => l.trim())
+		.join("\n")
 }
 
 export { get }

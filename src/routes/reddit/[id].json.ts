@@ -28,20 +28,22 @@ const get: RequestHandler = async function get(req) {
 			{ title, selftext_html, author }: Snoowrap.Submission = await (r as any)
 				.getSubmission(id)
 				.fetch()
-		if (!title.toLowerCase().startsWith("[level]") || !selftext_html)
+		if (
+			(!title.toLowerCase().startsWith("[level]") &&
+				!title.toLowerCase().startsWith("[level pack]")) ||
+			!selftext_html
+		)
 			return { status: 400, body: { error: true, message: "Not a level" } }
 		const $ = cheerio.load(selftext_html),
-			data = $("pre > code").text()
+			data = $("pre > code")
+				.map((i, el) => cleanup($(el).text()))
+				.toArray()
 		if (!data) return { status: 400, body: { error: true, message: "Not a level" } }
 		const puzzle: Puzzle = {
 			id,
 			title,
 			user: author.name,
-			data: data
-				.split("\n")
-				.slice(0, 38)
-				.map(l => l.trim())
-				.join("\n"),
+			data,
 		}
 
 		return {
@@ -56,6 +58,14 @@ const get: RequestHandler = async function get(req) {
 			},
 		}
 	}
+}
+
+function cleanup(data: string) {
+	return data
+		.split("\n")
+		.slice(0, 38)
+		.map(l => l.trim())
+		.join("\n")
 }
 
 export { get }

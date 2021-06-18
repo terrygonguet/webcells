@@ -31,12 +31,6 @@
 
 	onMount(() => {
 		updateLabels()
-		canvasEl.addEventListener("correct", updateLabels)
-		canvasEl.addEventListener("incorrect", updateLabels)
-		return () => {
-			canvasEl.removeEventListener("correct", updateLabels)
-			canvasEl.removeEventListener("incorrect", updateLabels)
-		}
 	})
 </script>
 
@@ -63,6 +57,11 @@
 		class="{classes} absolute top-0 left-0"
 		use:game={{ level, width, height, hexRadius }}
 		bind:this={canvasEl}
+		on:correct={updateLabels}
+		on:incorrect={updateLabels}
+		on:correct
+		on:incorrect
+		on:gameover
 	>
 		Your browser is not supported, please use <a
 			href="https://www.mozilla.org/en-US/firefox/new/"

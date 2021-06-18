@@ -1,4 +1,4 @@
-import { Level, render, setup, click } from "$lib/game"
+import { Level, render, setup, click, isFinished } from "$lib/game"
 
 type GameActionOptions = {
 	level: Level
@@ -11,7 +11,7 @@ export function game(
 	el: HTMLCanvasElement,
 	{ level, width, height, hexRadius }: GameActionOptions,
 ) {
-	const state = setup({ canvas: el, level, width, height, hexRadius })
+	let state = setup({ canvas: el, level, width, height, hexRadius })
 
 	function onResize(this: Window, e: UIEvent) {
 		el.width = this.innerWidth
@@ -41,6 +41,7 @@ export function game(
 					el.dispatchEvent(new CustomEvent("incorrect"))
 					break
 			}
+			if (isFinished(state.level)) el.dispatchEvent(new CustomEvent("gameover"))
 		})
 	}
 
@@ -57,6 +58,24 @@ export function game(
 	el.addEventListener("contextmenu", onClick)
 
 	return {
+		update({
+			level: newLevel,
+			width: newWidth,
+			height: newHeight,
+			hexRadius: newHexRadius,
+		}: GameActionOptions) {
+			state = setup({
+				canvas: el,
+				level: newLevel,
+				width: newWidth,
+				height: newHeight,
+				hexRadius: newHexRadius,
+			})
+			width = newWidth
+			height = newHeight
+			hexRadius = newHexRadius
+			console.log("Updated")
+		},
 		destroy() {
 			cancelAnimationFrame(rafID)
 			window.removeEventListener("resize", onResize)

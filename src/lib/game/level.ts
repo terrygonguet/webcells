@@ -93,6 +93,8 @@ export function randomLevel(): Level {
 }
 
 export function parse(string: string): Level {
+	console.log(string)
+
 	if (string.startsWith("Webcells level v1")) return parseWebcellsV1(string)
 	else if (string.startsWith("Webcells save v1")) return parseWebcellsSaveV1(string)
 	else if (string.startsWith("Hexcells level v1")) return parseHexcellsV1(string)
@@ -212,7 +214,7 @@ function parseHexcellsV1(string: string): Level {
 	while (hexes.every(col => !last(col) && !last(col, -2))) hexes.forEach(col => col.splice(-2, 2))
 	// remap x & y
 	for (let x = 0; x < hexes.length; x++) {
-		for (let y = 0; y < hexes.length; y++) {
+		for (let y = 0; y < hexes[x].length; y++) {
 			const hex = hexes[x][y]
 			if (!hex) continue
 			hex.x = x

@@ -248,6 +248,10 @@ export function inColumn(x: number, y: number, angle: ColumnHint["angle"], level
 	return hexes
 }
 
+export function isFinished(level: Level) {
+	return !level.hexes.flat().some(h => h && h.type != HexType.ColumnHint && h.hidden)
+}
+
 export function serialize(level: Level) {
 	const precisions: { [char: number]: string } = {
 			[Precision.None]: "x",
