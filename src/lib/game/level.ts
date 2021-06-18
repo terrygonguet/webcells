@@ -1,3 +1,4 @@
+import { browser } from "$app/env"
 import { showColumnHints } from "$lib/stores"
 import { clamp, last, pickEl, randInt } from "$lib/utils"
 import { get } from "svelte/store"
@@ -93,7 +94,8 @@ export function randomLevel(): Level {
 }
 
 export function parse(string: string): Level {
-	if (string.startsWith("Webcells level v1")) return parseWebcellsV1(string)
+	if (!browser) return {} as any
+	else if (string.startsWith("Webcells level v1")) return parseWebcellsV1(string)
 	else if (string.startsWith("Webcells save v1")) return parseWebcellsSaveV1(string)
 	else if (string.startsWith("Hexcells level v1")) return parseHexcellsV1(string)
 	else throw new Error("Unsupported level format")
@@ -205,8 +207,8 @@ function parseHexcellsV1(string: string): Level {
 		}
 	}
 	// remove useless rows
-	while (hexes[0].every(c => !c) && hexes[1].every(c => !c)) hexes.splice(0, 2)
-	while (last(hexes).every(c => !c) && last(hexes, -2).every(c => !c)) hexes.splice(-2, 2)
+	while (hexes[0].every(c => !c) && hexes[1]?.every(c => !c)) hexes.splice(0, 2)
+	while (last(hexes)?.every(c => !c) && last(hexes, -2)?.every(c => !c)) hexes.splice(-2, 2)
 	// remove useless columns
 	while (hexes.every(col => !col[0] && !col[1])) hexes.forEach(col => col.splice(0, 2))
 	while (hexes.every(col => !last(col) && !last(col, -2))) hexes.forEach(col => col.splice(-2, 2))
