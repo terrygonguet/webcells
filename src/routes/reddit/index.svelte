@@ -19,7 +19,14 @@
 	import { browser } from "$app/env"
 	import { lookLikeHexcells } from "$lib/stores"
 
-	type Entry = [string, string, string, number, string]
+	type Entry = {
+		id: string
+		title: string
+		difficulty: string
+		numPuzzles: number
+		author: string
+		isStarted: boolean
+	}
 
 	export let puzzles: Puzzle[]
 
@@ -27,15 +34,20 @@
 		searchDifficulty = $page.query.get("difficulty") ?? "*",
 		searchType = $page.query.get("type") ?? "*"
 
-	$: entries = puzzles.map<Entry>(({ title, id, user, data }) => [
-		id,
-		...parseTitle(title),
-		data.length,
-		user,
-	])
+	$: entries = puzzles.map<Entry>(({ title, id, user, data }) => {
+		const [name, difficulty] = parseTitle(title)
+		return {
+			id,
+			title: name,
+			difficulty,
+			numPuzzles: data.length,
+			author: user,
+			isStarted: browser && !!localStorage.getItem("saved-" + id),
+		}
+	})
 	$: difficulties = getUniqueDifficulties(entries)
 	$: filteredEntries = entries.filter(
-		([, title, difficulty, numPuzzles]) =>
+		({ title, difficulty, numPuzzles }) =>
 			title.toLocaleLowerCase().includes(searchTitle.toLocaleLowerCase()) &&
 			(searchDifficulty == "*" || difficulty == searchDifficulty) &&
 			(searchType == "*" || (searchType == "single" ? numPuzzles == 1 : numPuzzles > 1)),
@@ -58,7 +70,7 @@
 
 	function getUniqueDifficulties(entries: Entry[]) {
 		const set = new Set<string>()
-		entries.forEach(([, , difficulty]) => set.add(difficulty))
+		entries.forEach(({ difficulty }) => set.add(difficulty))
 		return Array.from(set).sort()
 	}
 
@@ -72,6 +84,7 @@
 </svelte:head>
 
 <main class:look-like-hexcells={$lookLikeHexcells} in:fly|local={flyInDown} out:fly|local={fadeOut}>
+	<h1 class="text-6xl font-thin col-start-2 text-center">User made levels</h1>
 	<form on:submit|preventDefault>
 		<img
 			class="h-8 self-center mr-1 transform"
@@ -107,9 +120,9 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each filteredEntries as [id, title, difficulty, numPuzzles, user]}
+				{#each filteredEntries as { id, title, difficulty, numPuzzles, author, isStarted }}
 					<a href="/reddit/{id}">
-						<td class="px-2 md:px-4 py-2">{title}</td>
+						<td class="px-2 md:px-4 py-2">{title}{isStarted ? "💾" : ""}</td>
 						<td class="px-2 md:px-4 py-2 text-center align-middle">{difficulty}</td>
 						<td class="px-2 md:px-4 py-2 text-center align-middle"
 							>{numPuzzles == 1 ? "Single level" : `${numPuzzles} level pack`}</td
@@ -118,7 +131,7 @@
 							<a
 								href="https://www.reddit.com/r/hexcellslevels/comments/{id}"
 								class="px-3 py-1 transition-all transform hover:scale-105 hover:bg-yellow-600 hover:bg-opacity-25 rounded-full"
-								target="_blank">{user}</a
+								target="_blank">{author}</a
 							>
 						</td>
 					</a>
@@ -137,7 +150,7 @@
 	main {
 		@apply grid gap-3 text-lg h-screen py-2;
 		grid-template-columns: auto 1fr auto;
-		grid-template-rows: auto 1fr auto;
+		grid-template-rows: auto auto 1fr auto;
 	}
 
 	form {
