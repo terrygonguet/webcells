@@ -95,6 +95,7 @@ export function interact(
 					type: "incorrect",
 					apply() {
 						level.mistakes++
+						level.moves++
 					},
 				}
 				break
@@ -104,6 +105,7 @@ export function interact(
 					apply() {
 						hex.hidden = false
 						hideNeighboursHints(hex, level)
+						level.moves++
 					},
 				}
 				break
@@ -116,6 +118,7 @@ export function interact(
 					apply() {
 						hex.hidden = false
 						hideNeighboursHints(hex, level)
+						level.moves++
 					},
 				}
 				break
@@ -124,6 +127,7 @@ export function interact(
 					type: "incorrect",
 					apply() {
 						level.mistakes++
+						level.moves++
 					},
 				}
 				break

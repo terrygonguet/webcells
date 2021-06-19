@@ -22,6 +22,7 @@ export type Level = {
 	height: number
 	hexes: (Hex | null)[][]
 	mistakes: number
+	moves: number
 }
 
 export function randomLevel(): Level {
@@ -34,6 +35,7 @@ export function randomLevel(): Level {
 			width,
 			height,
 			mistakes: 0,
+			moves: 0,
 			hexes: Array(width)
 				.fill(0)
 				.map((_, x) =>
@@ -230,6 +232,7 @@ function parseHexcellsV1(string: string): Level {
 		height: hexes[0].length,
 		hexes,
 		mistakes: 0,
+		moves: 0,
 	}
 }
 
@@ -319,6 +322,7 @@ function parseWebcellsV1(string: string): Level {
 		height,
 		hexes,
 		mistakes: 0,
+		moves: 0,
 	}
 
 	hexes.flat().forEach(h => {

@@ -19,14 +19,13 @@
 </script>
 
 <script lang="ts">
-	import { parse, serialize } from "$lib/game"
-	import type { Level } from "$lib/game"
+	import { isFinished, parse, serialize } from "$lib/game"
 	import { fly } from "svelte/transition"
 	import { fadeOut, flyInDown } from "$lib/transition"
 	import Game from "$lib/components/Game.svelte"
 	import { browser } from "$app/env"
 	import type { Puzzle } from "./levels.json"
-	import { onMount, tick } from "svelte"
+	import { onMount } from "svelte"
 
 	type SavedData = {
 		stage: number
@@ -67,7 +66,7 @@
 	}
 
 	function save() {
-		if (!level) return
+		if (!level || (level.moves == 0 && stage == 0) || isFinished(level)) return
 		localStorage.setItem(storageId, JSON.stringify({ stage, level: serialize(level) }))
 	}
 
